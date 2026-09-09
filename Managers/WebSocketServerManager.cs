@@ -89,6 +89,9 @@ public class WebSocketServerManager
 
             _ = Task.Run(SyncOtherPlayersLoop);
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncOtherPlayers loop successfully!");
+
+            _ = Task.Run(SyncOtherPlayersRealtimeLoop);
+            Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncOtherPlayersRealtime loop successfully!");
             
             _ = Task.Run(CountOnlinePlayers);
             _ = Task.Run(ListenForQuit);
@@ -585,6 +588,83 @@ public class WebSocketServerManager
     }
     private async Task SyncOtherPlayersLoop()
     {
+        const int targetTickRate = 1;
+        const int tickMS = 2000 / targetTickRate;
+
+        var stopwatch = new Stopwatch();
+
+        while (!shutdownCts.IsCancellationRequested)
+        {
+            stopwatch.Restart();
+
+            try
+            {
+                var snapshot = new Dictionary<int, List<ClientConnection>>();
+
+                lock (mapPlayers)
+                {
+                    snapshot = mapPlayers;
+                }
+
+                foreach (var kv in snapshot)
+                {
+                    var clientsInMap = kv.Value;
+                    if (clientsInMap.Count <= 0)
+                        continue;
+
+                    PacketWriterManager writer = new PacketWriterManager();
+                    writer.WriteInt((int)EnumCmdCode.syncOtherPlayersData);
+                    writer.WriteListCount(clientsInMap.Count);
+
+                    foreach (var client in clientsInMap)
+                    {
+                        int idAccount = RaceManager.Instance.GetIDAccount(client);
+                        if (idAccount <= 0)
+                            continue;
+
+                        var accountData = CacheManager.Instance.GetAccountData(idAccount);
+                        if (accountData == null || accountData.playerData == null || accountData.playerTransformData == null || accountData.playerStateData == null)
+                            continue;
+
+                        writer.WriteInt(accountData.playerData.idAccount);
+                        writer.WriteInt(accountData.playerData.level);
+                        writer.WriteInt(accountData.playerData.idSchool);
+                        writer.WriteInt(accountData.playerData.hair);
+                        writer.WriteInt(accountData.playerData.weapon);
+                        writer.WriteInt(accountData.playerData.helmet);
+                        writer.WriteInt(accountData.playerData.armor);
+                        writer.WriteInt(accountData.playerData.legArmor);
+                    }
+                    byte[] packet = writer.ToArray();
+
+                    foreach (var client in clientsInMap)
+                    {
+                        try
+                        {
+                            await RaceManager.Instance.SendPacketToClient(client, packet);
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[Server] Sync other player error: " + ex.Message);
+            }
+
+            stopwatch.Stop();
+            int sleep = tickMS - (int)stopwatch.ElapsedMilliseconds;
+
+            if (sleep > 0)
+                await Task.Delay(sleep, shutdownCts.Token);
+        }
+    }
+    private async Task SyncOtherPlayersRealtimeLoop()
+    {
         const int targetTickRate = 30;
         const int tickMS = 1000 / targetTickRate;
 
@@ -610,7 +690,7 @@ public class WebSocketServerManager
                         continue;
 
                     PacketWriterManager writer = new PacketWriterManager();
-                    writer.WriteInt((int)EnumCmdCode.syncPlayerData);
+                    writer.WriteInt((int)EnumCmdCode.syncOtherPlayersRealtimeData);
                     writer.WriteListCount(clientsInMap.Count);
 
                     foreach (var client in clientsInMap)
@@ -624,13 +704,6 @@ public class WebSocketServerManager
                             continue;
 
                         writer.WriteInt(accountData.playerData.idAccount);
-                        writer.WriteInt(accountData.playerData.level);
-                        writer.WriteInt(accountData.playerData.idSchool);
-                        writer.WriteInt(accountData.playerData.hair);
-                        writer.WriteInt(accountData.playerData.weapon);
-                        writer.WriteInt(accountData.playerData.helmet);
-                        writer.WriteInt(accountData.playerData.armor);
-                        writer.WriteInt(accountData.playerData.legArmor);
                         writer.WriteInt(accountData.playerData.maxHP);
                         writer.WriteInt(accountData.playerData.hp);
                         writer.WriteInt((int)accountData.playerData.currentTile);
@@ -762,9 +835,9 @@ public class WebSocketServerManager
 
             switch (cmd)
             {
-                case EnumCmdCode.syncPlayerData:
-                    var syncPlayerController = new PlayerController();
-                    await syncPlayerController.UpdatePlayerInfo(client, data);
+                case EnumCmdCode.syncOtherPlayersData:
+                    var syncOtherPlayersController = new PlayerController();
+                    await syncOtherPlayersController.UpdatePlayerInfo(client, data);
                     break;
 
                 case EnumCmdCode.login:

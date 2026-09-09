@@ -13,7 +13,8 @@
     syncMobsData = 0x0100,
 
     syncCallBack = 0x0140,
-    syncPlayerData = 0x0150,
+    syncOtherPlayersData = 0x0150,
+    syncOtherPlayersRealtimeData = 0x0151,
 
     mobsAttackPlayer = 0x0200,
     mobsHeal = 0x0201,
