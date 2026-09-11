@@ -205,7 +205,7 @@ public class MobController
 
         return nearestPlayer;
     }
-    public void Attack(float deltaTime, MapData map, int mobDamage)
+    public void Attack(float deltaTime, MapData map, int idMob, int mobDamage)
     {
         if (isDie)
             return;
@@ -361,6 +361,7 @@ public class MobController
 
             PacketWriterManager writer = new PacketWriterManager();
             writer.WriteInt((int)EnumCmdCode.mobsAttackPlayer);
+            writer.WriteInt(idMob);
             writer.WriteInt(player.playerData.idAccount);
             writer.WriteInt(mobDamage);
             writer.WriteInt(player.playerData.hp);
@@ -368,6 +369,7 @@ public class MobController
 
             PacketWriterManager writer1 = new PacketWriterManager();
             writer1.WriteInt((int)EnumCmdCode.mobsAttackOtherPlayer);
+            writer1.WriteInt(idMob);
             writer1.WriteInt(player.playerData.idAccount);
             writer1.WriteInt(mobDamage);
             writer1.WriteInt(player.playerData.hp);

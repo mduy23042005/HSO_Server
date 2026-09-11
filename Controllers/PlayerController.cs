@@ -310,30 +310,19 @@ public class PlayerController
 
         mob.hp = mob.hp - damage;
 
-        PlayerAttackMobDataResult playerAttackDataResult = new PlayerAttackMobDataResult();
-        playerAttackDataResult.cmd = EnumCmdCode.playerAttackMob;
-        playerAttackDataResult.aimedMobID = data.aimedMobID;
-        playerAttackDataResult.damage = damage;
-        playerAttackDataResult.hpMobAfterAttack = mob.hp;
-
-        OtherPlayerAttackMobDataResult otherPlayerAttackDataResult = new OtherPlayerAttackMobDataResult();
-        otherPlayerAttackDataResult.cmd = EnumCmdCode.otherPlayerAttackMob;
-        otherPlayerAttackDataResult.aimedMobID = data.aimedMobID;
-        otherPlayerAttackDataResult.damage = damage;
-        otherPlayerAttackDataResult.hpMobAfterAttack = mob.hp;
-
         PacketWriterManager writer = new PacketWriterManager();
-        writer.WriteInt((int)playerAttackDataResult.cmd);
-        writer.WriteInt(playerAttackDataResult.aimedMobID);
-        writer.WriteInt(playerAttackDataResult.damage);
-        writer.WriteInt(playerAttackDataResult.hpMobAfterAttack);
+        writer.WriteInt((int)EnumCmdCode.playerAttackMob);
+        writer.WriteInt(data.aimedMobID);
+        writer.WriteInt(damage);
+        writer.WriteInt(mob.hp);
         await RaceManager.Instance.SendPacketToClient(client, writer.ToArray());
 
         PacketWriterManager writer1 = new PacketWriterManager();
-        writer1.WriteInt((int)otherPlayerAttackDataResult.cmd);
-        writer1.WriteInt(otherPlayerAttackDataResult.aimedMobID);
-        writer1.WriteInt(otherPlayerAttackDataResult.damage);
-        writer1.WriteInt(otherPlayerAttackDataResult.hpMobAfterAttack);
+        writer1.WriteInt((int)EnumCmdCode.otherPlayerAttackMob);
+        writer1.WriteInt(data.idAccount);
+        writer1.WriteInt(data.aimedMobID);
+        writer1.WriteInt(damage);
+        writer1.WriteInt(mob.hp);
         await RaceManager.Instance.SendPacketToAllClients(writer1.ToArray(), client);
     }
 }

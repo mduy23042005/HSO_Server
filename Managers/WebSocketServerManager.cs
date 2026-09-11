@@ -412,7 +412,7 @@ public class WebSocketServerManager
                         var hpMob = CacheManager.Instance.GetMob(mob.id).hp;
                         if (hpMob > 0)
                         {
-                            mob.mobsAI.Attack(deltaTime, map, mob.damage);
+                            mob.mobsAI.Attack(deltaTime, map, mob.id, mob.damage);
                             mob.mobsAI.Move(deltaTime, map);
                         }
                         else
