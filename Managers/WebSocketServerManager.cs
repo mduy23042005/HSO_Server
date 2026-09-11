@@ -627,6 +627,7 @@ public class WebSocketServerManager
                             continue;
 
                         writer.WriteInt(accountData.playerData.idAccount);
+                        writer.WriteString(accountData.playerData.nameChar);
                         writer.WriteInt(accountData.playerData.level);
                         writer.WriteInt(accountData.playerData.idSchool);
                         writer.WriteInt(accountData.playerData.hair);
@@ -801,7 +802,7 @@ public class WebSocketServerManager
             time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Online players: [{onlinePlayers.Count}]");
 
-            await Task.Delay(20000, shutdownCts.Token);
+            await Task.Delay(60000, shutdownCts.Token);
         }
     }
     private void ShutdownServer()

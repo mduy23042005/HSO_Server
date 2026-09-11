@@ -72,6 +72,7 @@ public class LogInController
                 writer.WriteBool(loginResult.success);
                 writer.WriteInt(loginResult.idAccount);
                 writer.WriteInt(loginResult.idSchool);
+                writer.WriteString(loginResult.nameChar);
                 writer.WriteInt(loginResult.hair);
                 writer.WriteInt(loginResult.level);
                 writer.WriteInt(loginResult.maxHP);
@@ -134,6 +135,7 @@ public class LogInController
         writer.WriteBool(loginResult.success);
         writer.WriteInt(loginResult.idAccount);
         writer.WriteInt(loginResult.idSchool);
+        writer.WriteString(loginResult.nameChar);
         writer.WriteInt(loginResult.hair);
         writer.WriteInt(loginResult.level);
         writer.WriteInt(loginResult.maxHP);
@@ -211,6 +213,7 @@ public class LogInController
         accountData.playerData.idAccount = acc.Idaccount;
         accountData.playerData.level = acc.Level ?? 1;
         accountData.playerData.idSchool = acc.Idschool ?? 0;
+        accountData.playerData.nameChar = acc.NameChar;
         accountData.playerData.hair = acc.Hair ?? 0;
         accountData.playerData.weapon = accountData.equipments[0].idItem0_1;
         accountData.playerData.helmet = accountData.equipments[1].idItem0_1;
