@@ -482,9 +482,7 @@ public class WebSocketServerManager
                     int idMap = CacheManager.Instance.GetClientMapID(accountData.playerData.nameMap);
 
                     if (!snapshot.ContainsKey(idMap))
-                    {
                         snapshot[idMap] = new List<ClientConnection>();
-                    }
 
                     snapshot[idMap].Add(client);
                 }
