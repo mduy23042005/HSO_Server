@@ -9,7 +9,8 @@ public enum TileType
     Ground = 0,
     Water = 1,
     Wall = 2,
-    Obstacle = 3
+    Decoration = 3,
+    MapTransition = 4
 }
 public class MapData
 {
@@ -86,7 +87,23 @@ public class MapController
         if (x < 0 || y < 0 || x >= mapData.width || y >= mapData.height)
             return false;
 
-        return mapData.tiles[x, y] == (byte)TileType.Ground || mapData.tiles[x, y] == (byte)TileType.Water;
+        return mapData.tiles[x, y] == (byte)TileType.Ground || mapData.tiles[x, y] == (byte)TileType.Water || mapData.tiles[x, y] == (byte)TileType.MapTransition;
+    }
+
+    public bool IsTransitionMap(MapData mapData, float worldX, float worldY)
+    {
+        if (mapData == null)
+        {
+            return false;
+        }
+
+        int x = (int)Math.Floor(worldX) - mapData.offsetX;
+        int y = (int)Math.Floor(worldY) - mapData.offsetY;
+
+        if (x < 0 || y < 0 || x >= mapData.width || y >= mapData.height)
+            return false;
+
+        return mapData.tiles[x, y] == (byte)TileType.MapTransition;
     }
 }
 

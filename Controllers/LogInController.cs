@@ -219,7 +219,7 @@ public class LogInController
         accountData.playerData.helmet = accountData.equipments[1].idItem0_1;
         accountData.playerData.armor = accountData.equipments[2].idItem0_1;
         accountData.playerData.legArmor = accountData.equipments[3].idItem0_1;
-        accountData.playerData.nameMap = $"Ngôi Làng Nhỏ";
+        accountData.playerData.idMap = 1;
 
         var playerController = new PlayerController(accountData.account.Idaccount, acc.Point0 ?? 5, acc.Point1 ?? 5, acc.Point2 ?? 5, acc.Point3 ?? 5);
         accountData.playerData.maxHP = playerController.GetMaxHP();

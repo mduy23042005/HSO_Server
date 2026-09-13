@@ -398,7 +398,7 @@ public class WebSocketServerManager
             try
             {
                 float deltaTime = 1f / targetTickRate;
-                for (int i = 1; i <= CacheManager.Instance.GetCountInitedMap(); i = i + 1)
+                for (int i = 1; i <= CacheManager.Instance.GetCountMap(); i = i + 1)
                 {
                     var map = CacheManager.Instance.GetMap(i);
 
@@ -479,12 +479,13 @@ public class WebSocketServerManager
                     if (accountData?.playerTransformData == null)
                         continue;
 
-                    int idMap = CacheManager.Instance.GetClientMapID(accountData.playerData.nameMap);
+                    if (accountData.playerData.idMap == 1)
+                        continue;
 
-                    if (!snapshot.ContainsKey(idMap))
-                        snapshot[idMap] = new List<ClientConnection>();
+                    if (!snapshot.ContainsKey(accountData.playerData.idMap))
+                        snapshot[accountData.playerData.idMap] = new List<ClientConnection>();
 
-                    snapshot[idMap].Add(client);
+                    snapshot[accountData.playerData.idMap].Add(client);
                 }
 
                 lock (mapPlayers)

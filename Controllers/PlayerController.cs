@@ -108,7 +108,7 @@ public class PlayerTransformData
 }
 public class PlayerData
 {
-    public string nameMap;
+    public int idMap;
     public int idAccount;
     public string nameChar;
     public int level;
@@ -273,14 +273,13 @@ public class PlayerController
                 accountData.playerStateData.partBodyTransforms[1].category = (Category)reader.ReadInt();
                 accountData.playerStateData.partBodyTransforms[1].label = (Label)reader.ReadInt();
             }
-            await CheckValidPosition(client, accountData, accountData.playerTransformData);
+            await CheckPosition(client, accountData, accountData.playerTransformData);
         }
     }
 
-    private async Task CheckValidPosition(ClientConnection client, AccountData accountData, PlayerTransformData newTransformData)
+    private async Task CheckPosition(ClientConnection client, AccountData accountData, PlayerTransformData newTransformData)
     {
-        var idMap = CacheManager.Instance.GetClientMapID(accountData.playerData.nameMap);
-        var map = CacheManager.Instance.GetMap(idMap);
+        var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
         if (!mapController.IsWalkable(map, newTransformData.positionData.x, newTransformData.positionData.y))
         {
             if (accountData != null && accountData.playerTransformData != null)
@@ -297,8 +296,48 @@ public class PlayerController
                 _ = RaceManager.Instance.SendPacketToClient(client, packet);
             }
         }
-        else 
-            accountData.playerTransformData = newTransformData;
+        else
+        {
+
+            if (mapController.IsTransitionMap(map, newTransformData.positionData.x, newTransformData.positionData.y))
+            {
+                if (accountData != null && accountData.playerTransformData != null)
+                {
+                    var playerData = CacheManager.Instance.GetAccountData(accountData.playerData.idAccount);
+
+                    PacketWriterManager writer = new PacketWriterManager();
+                    writer.WriteInt((int)EnumCmdCode.changeMap);
+                    int newIDMap = 0;
+
+                    switch (accountData.playerData.idMap)
+                    {
+                        case 1:
+                            //từ ngôi làng nhỏ qua rừng ảo giác sẽ theo tọa độ này
+                            newIDMap = 6;
+                            playerData.playerTransformData.positionData.x = -8;
+                            playerData.playerTransformData.positionData.y = -54;
+                            break;
+
+                        case 6:
+                            newIDMap = 1;
+                            playerData.playerTransformData.positionData.x = 24;
+                            playerData.playerTransformData.positionData.y = 22;
+                            break;
+                    }
+                    playerData.playerData.idMap = newIDMap;
+                    writer.WriteInt(newIDMap);
+                    writer.WriteFloat(playerData.playerTransformData.positionData.x);
+                    writer.WriteFloat(playerData.playerTransformData.positionData.y);
+
+                    writer.WriteFloat(accountData.playerTransformData.scaleData.x);
+
+                    byte[] packet = writer.ToArray();
+                    _ = RaceManager.Instance.SendPacketToClient(client, packet);
+                }
+            }
+            else
+                accountData.playerTransformData = newTransformData;
+        }
     }
 
     public async Task PlayerAttack(ClientConnection client, PlayerAttackDataPacket data)

@@ -2,6 +2,7 @@
 {
     login = 0x0000,
     register = 0x0002,
+    changeMap = 0x0003,
 
     equipment = 0x0010,
     equipmentAttributes = 0x0011,

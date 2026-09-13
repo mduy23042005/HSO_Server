@@ -189,18 +189,8 @@ public class AStarManager
 
     public bool IsWalkable(MapData mapData, float worldX, float worldY)
     {
-        if (mapData == null)
-        {
-            return false;
-        }
-
-        int x = (int)Math.Floor(worldX) - mapData.offsetX;
-        int y = (int)Math.Floor(worldY) - mapData.offsetY;
-
-        if (x < 0 || y < 0 || x >= mapData.width || y >= mapData.height)
-            return false;
-
-        return mapData.tiles[x, y] == (byte)TileType.Ground || mapData.tiles[x, y] == (byte)TileType.Water;
+        MapController mapController = new MapController();
+        return mapController.IsWalkable(mapData, worldX, worldY);
     }
     private List<(int x, int y)> ReconstructPath(NodeAStar node)
     {
