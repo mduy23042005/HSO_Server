@@ -97,8 +97,10 @@ public class MobController
 
         return new Vector2(x, y);
     }
-    public void Move(float deltaTime, MapData map)
+    public void Move(float deltaTime, MapData map, int id)
     {
+        (int, int) oldCell = ((int)currentPosition.X - map.offsetX, (int)currentPosition.Y - map.offsetY);
+
         if (isAttacking)
             return;
 
@@ -171,6 +173,17 @@ public class MobController
         if (Vector2.Distance(currentPosition, targetNode) < 0.1f)
         {
             pathIndex++;
+        }
+
+        (int, int) newCell = ((int)(currentPosition.X - map.offsetX), (int)(currentPosition.Y - map.offsetY));
+
+        if (oldCell != newCell)
+        {
+            lock (MapController.mapMobs)
+            {
+                MapController.mapMobs[map.map.Idmap][oldCell].Remove(CacheManager.Instance.GetMob(id));
+                MapController.mapMobs[map.map.Idmap][newCell].Add(CacheManager.Instance.GetMob(id));
+            }
         }
     }
     private (int x, int y) ToGrid(Vector2 pos)

@@ -243,9 +243,14 @@ public class PlayerController
                 accountData.playerTransformData.positionData = new PositionData();
                 accountData.playerTransformData.scaleData = new ScaleData();
             }
-            accountData.playerTransformData.positionData.x = reader.ReadFloat();
-            accountData.playerTransformData.positionData.y = reader.ReadFloat();
-            accountData.playerTransformData.scaleData.x = reader.ReadFloat();
+
+            var playerTransformData = new PlayerTransformData();
+            playerTransformData.positionData = new PositionData();
+            playerTransformData.scaleData = new ScaleData();
+
+            playerTransformData.positionData.x = reader.ReadFloat();
+            playerTransformData.positionData.y = reader.ReadFloat();
+            playerTransformData.scaleData.x = reader.ReadFloat();
 
             if (accountData.playerStateData == null)
                 accountData.playerStateData = new PlayerStateData();
@@ -273,7 +278,7 @@ public class PlayerController
                 accountData.playerStateData.partBodyTransforms[1].category = (Category)reader.ReadInt();
                 accountData.playerStateData.partBodyTransforms[1].label = (Label)reader.ReadInt();
             }
-            await CheckPosition(client, accountData, accountData.playerTransformData);
+            await CheckPosition(client, accountData, playerTransformData);
         }
     }
 
@@ -298,7 +303,6 @@ public class PlayerController
         }
         else
         {
-
             if (mapController.IsTransitionMap(map, newTransformData.positionData.x, newTransformData.positionData.y))
             {
                 if (accountData != null && accountData.playerTransformData != null)
@@ -336,7 +340,22 @@ public class PlayerController
                 }
             }
             else
+            {
+                (int, int) oldCell = ((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
+
                 accountData.playerTransformData = newTransformData;
+
+                (int, int) newCell = ((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
+
+                if (oldCell != newCell)
+                {
+                    lock (MapController.mapPlayers)
+                    {
+                        MapController.mapPlayers[accountData.playerData.idMap][oldCell].Remove(RaceManager.Instance.GetClientByAccountId(accountData.account.Idaccount));
+                        MapController.mapPlayers[accountData.playerData.idMap][newCell].Add(RaceManager.Instance.GetClientByAccountId(accountData.account.Idaccount));
+                    }
+                }
+            }
         }
     }
 

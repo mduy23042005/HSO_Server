@@ -29,6 +29,10 @@ public class MapData
 
 public class MapController
 {
+    // idMap, (tất cả các cell) -> mỗi cell, các object trong cell đó
+    public static Dictionary<int, Dictionary<(int, int), List<MobData>>> mapMobs = new Dictionary<int, Dictionary<(int, int), List<MobData>>>();
+    public static Dictionary<int, Dictionary<(int, int), List<ClientConnection>>> mapPlayers = new Dictionary<int, Dictionary<(int, int), List<ClientConnection>>>();
+
     public void InitMap(MapData mapData)
     {
         string? path = AppContext.BaseDirectory;
@@ -50,9 +54,7 @@ public class MapController
         }
 
         if (!File.Exists(path))
-        {
             return;
-        }
 
         using (BinaryReader reader = new BinaryReader(File.Open(path, FileMode.Open)))
         {
@@ -70,6 +72,19 @@ public class MapController
                 {
                     mapData.tiles[x, y] = reader.ReadByte();
                 }
+            }
+        }
+
+        mapMobs[mapData.map.Idmap] = new Dictionary<(int, int), List<MobData>>();
+        mapPlayers[mapData.map.Idmap] = new Dictionary<(int, int), List<ClientConnection>>();
+
+        for (int y = 0; y < mapData.height; y++)
+        {
+            for (int x = 0; x < mapData.width; x++)
+            {
+                //mapMobs là Dictionary truy theo idMap để lấy 1 cái Dictionary chứa tất cả các cell.
+                mapMobs[mapData.map.Idmap][(x, y)] = new List<MobData>();
+                mapPlayers[mapData.map.Idmap][(x, y)] = new List<ClientConnection>();
             }
         }
     }
