@@ -29,7 +29,8 @@ public class WebSocketServerManager
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
     private DateTime time;
 
-    private AStarManager astar = new AStarManager();
+    private Dictionary<ClientConnection, Dictionary<int, MobData>> mobsInViewAreaSnapshot = new Dictionary<ClientConnection, Dictionary<int, MobData>>();
+    private Dictionary<ClientConnection, Dictionary<int, ClientConnection>> playersInViewAreaSnapshot = new Dictionary<ClientConnection, Dictionary<int, ClientConnection>>();
 
     public static void Main(string[] args)
     {
@@ -473,6 +474,8 @@ public class WebSocketServerManager
 
         var stopwatch = new Stopwatch();
 
+        MapController mapController = new MapController();
+
         while (!shutdownCts.IsCancellationRequested)
         {
             stopwatch.Restart();
@@ -494,13 +497,19 @@ public class WebSocketServerManager
 
                     Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
 
-                    var mobsInViewArea = new List<MobData>();
-
                     int minX = (int)playerPosition.X - 15;
                     int maxX = (int)playerPosition.X + 15;
 
                     int minY = (int)playerPosition.Y - 10;
                     int maxY = (int)playerPosition.Y + 10;
+
+                    if (!mobsInViewAreaSnapshot.TryGetValue(client, out var mobsInViewArea))
+                    {
+                        mobsInViewArea = new Dictionary<int, MobData>();
+                        mobsInViewAreaSnapshot.Add(client, mobsInViewArea);
+                    }
+
+                    mobsInViewArea.Clear();
 
                     lock (MapController.mapMobs)
                     {
@@ -511,9 +520,9 @@ public class WebSocketServerManager
                                 if (!MapController.mapMobs[map.map.Idmap].TryGetValue((x, y), out var mobsInCell))
                                     continue;
 
-                                foreach (var mob in mobsInCell)
+                                foreach (var mob in mobsInCell) 
                                 {
-                                    mobsInViewArea.Add(mob);
+                                    mobsInViewArea.TryAdd(mob.id, mob);
                                 }
                             }
                         }
@@ -523,10 +532,10 @@ public class WebSocketServerManager
                     writer.WriteInt((int)EnumCmdCode.syncMobsData);
                     writer.WriteInt(mobsInViewArea.Count);
 
-                    foreach (var mob in mobsInViewArea)
+                    foreach (var mob in mobsInViewArea.Values)
                     {
                         var currentHPMob = CacheManager.Instance.GetMob(mob.id).hp;
-                        var currentTile = astar.GetTileType(map, mob.mobsAI.GetCurrentPosition().X - map.offsetX, mob.mobsAI.GetCurrentPosition().Y - map.offsetY);
+                        var currentTile = mapController.GetTileType(map, mob.mobsAI.GetCurrentPosition().X - map.offsetX, mob.mobsAI.GetCurrentPosition().Y - map.offsetY);
 
                         writer.WriteInt(mob.id);
                         writer.WriteInt(mob.mob.Idmob);
@@ -594,54 +603,68 @@ public class WebSocketServerManager
 
                     Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
 
-                    var playersInViewArea = new List<ClientConnection>();
-
                     int minX = (int)playerPosition.X - 15;
                     int maxX = (int)playerPosition.X + 15;
 
                     int minY = (int)playerPosition.Y - 10;
                     int maxY = (int)playerPosition.Y + 10;
 
-                    lock (MapController.mapPlayers)
-                    {
-                        for (int y = minY; y <= maxY; y++)
-                        {
-                            for (int x = minX; x <= maxX; x++)
-                            {
-                                if (!MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
-                                    continue;
+                    PacketWriterManager writer = new PacketWriterManager();
 
-                                foreach (var player in playersInCell)
+                    lock (playersInViewAreaSnapshot)
+                    {
+                        if (!playersInViewAreaSnapshot.TryGetValue(client, out var playersInViewArea))
+                        {
+                            playersInViewArea = new Dictionary<int, ClientConnection>();
+                            playersInViewAreaSnapshot.Add(client, playersInViewArea);
+                        }
+
+                        playersInViewArea.Clear();
+
+                        lock (MapController.mapPlayers)
+                        {
+                            for (int y = minY; y <= maxY; y++)
+                            {
+                                for (int x = minX; x <= maxX; x++)
                                 {
-                                    playersInViewArea.Add(player);
+                                    if (!MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
+                                        continue;
+
+                                    foreach (var player in playersInCell)
+                                    {
+                                        if (RaceManager.Instance.GetIDAccount(player) == 0)
+                                            continue;
+
+                                        playersInViewArea.Add(RaceManager.Instance.GetIDAccount(player), player);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    PacketWriterManager writer = new PacketWriterManager();
-                    writer.WriteInt((int)EnumCmdCode.syncOtherPlayersData);
-                    writer.WriteListCount(playersInViewArea.Count - 1);
+                        writer.WriteInt((int)EnumCmdCode.syncOtherPlayersData);
+                        writer.WriteListCount(playersInViewArea.Count - 1);
 
-                    foreach (var player in playersInViewArea)
-                    {
-                        if (idAccount == RaceManager.Instance.GetIDAccount(player))
-                            continue;
+                        foreach (var player in playersInViewArea)
+                        {
+                            if (idAccount == player.Key)
+                                continue;
 
-                        var playerAccountData = CacheManager.Instance.GetAccountData(RaceManager.Instance.GetIDAccount(player));
+                            var playerAccountData = CacheManager.Instance.GetAccountData(player.Key);
 
-                        if (playerAccountData == null || playerAccountData.playerData == null)
-                            continue;
+                            if (playerAccountData == null || playerAccountData.playerData == null)
+                                continue;
 
-                        writer.WriteInt(playerAccountData.playerData.idAccount);
-                        writer.WriteString(playerAccountData.playerData.nameChar);
-                        writer.WriteInt(playerAccountData.playerData.level);
-                        writer.WriteInt(playerAccountData.playerData.idSchool);
-                        writer.WriteInt(playerAccountData.playerData.hair);
-                        writer.WriteInt(playerAccountData.playerData.weapon);
-                        writer.WriteInt(playerAccountData.playerData.helmet);
-                        writer.WriteInt(playerAccountData.playerData.armor);
-                        writer.WriteInt(playerAccountData.playerData.legArmor);
+                            writer.WriteInt(playerAccountData.playerData.idAccount);
+                            writer.WriteString(playerAccountData.playerData.nameChar);
+                            writer.WriteInt(playerAccountData.playerData.level);
+                            writer.WriteInt(playerAccountData.playerData.idSchool);
+                            writer.WriteInt(playerAccountData.playerData.hair);
+                            writer.WriteInt(playerAccountData.playerData.weapon);
+                            writer.WriteInt(playerAccountData.playerData.helmet);
+                            writer.WriteInt(playerAccountData.playerData.armor);
+                            writer.WriteInt(playerAccountData.playerData.legArmor);
+                        }
+
                     }
 
                     byte[] packet = writer.ToArray();
@@ -698,62 +721,76 @@ public class WebSocketServerManager
 
                     Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
 
-                    var playersInViewArea = new List<ClientConnection>();
-
                     int minX = (int)playerPosition.X - 15;
                     int maxX = (int)playerPosition.X + 15;
 
                     int minY = (int)playerPosition.Y - 10;
                     int maxY = (int)playerPosition.Y + 10;
 
-                    lock (MapController.mapPlayers)
-                    {
-                        for (int y = minY; y <= maxY; y++)
-                        {
-                            for (int x = minX; x <= maxX; x++)
-                            {
-                                if (!MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
-                                    continue;
+                    PacketWriterManager writer = new PacketWriterManager();
 
-                                foreach (var player in playersInCell)
+                    lock (playersInViewAreaSnapshot)
+                    {
+                        if (!playersInViewAreaSnapshot.TryGetValue(client, out var playersInViewArea))
+                        {
+                            playersInViewArea = new Dictionary<int, ClientConnection>();
+                            playersInViewAreaSnapshot.Add(client, playersInViewArea);
+                        }
+
+                        playersInViewArea.Clear();
+
+                        lock (MapController.mapPlayers)
+                        {
+                            for (int y = minY; y <= maxY; y++)
+                            {
+                                for (int x = minX; x <= maxX; x++)
                                 {
-                                    playersInViewArea.Add(player);
+                                    if (!MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
+                                        continue;
+
+                                    foreach (var player in playersInCell)
+                                    {
+                                        if (RaceManager.Instance.GetIDAccount(player) == 0)
+                                            continue;
+
+                                        playersInViewArea.Add(RaceManager.Instance.GetIDAccount(player), player);
+                                    }
                                 }
                             }
                         }
-                    }
-                    PacketWriterManager writer = new PacketWriterManager();
-                    writer.WriteInt((int)EnumCmdCode.syncOtherPlayersRealtimeData);
-                    writer.WriteListCount(playersInViewArea.Count - 1);
 
-                    foreach (var player in playersInViewArea)
-                    {
-                        if (idAccount == RaceManager.Instance.GetIDAccount(player))
-                            continue;
+                        writer.WriteInt((int)EnumCmdCode.syncOtherPlayersRealtimeData);
+                        writer.WriteListCount(playersInViewArea.Count - 1);
 
-                        var playerAccountData = CacheManager.Instance.GetAccountData(RaceManager.Instance.GetIDAccount(player));
+                        foreach (var player in playersInViewArea)
+                        {
+                            if (idAccount == player.Key)
+                                continue;
 
-                        if (playerAccountData == null || playerAccountData.playerData == null)
-                            continue;
+                            var playerAccountData = CacheManager.Instance.GetAccountData(player.Key);
 
-                        writer.WriteInt(playerAccountData.playerData.idAccount);
-                        writer.WriteInt(playerAccountData.playerData.maxHP);
-                        writer.WriteInt(playerAccountData.playerData.hp);
-                        writer.WriteInt((int)playerAccountData.playerData.currentTile);
+                            if (playerAccountData == null || playerAccountData.playerData == null)
+                                continue;
 
-                        writer.WriteFloat(playerAccountData.playerTransformData.positionData.x);
-                        writer.WriteFloat(playerAccountData.playerTransformData.positionData.y);
+                            writer.WriteInt(playerAccountData.playerData.idAccount);
+                            writer.WriteInt(playerAccountData.playerData.maxHP);
+                            writer.WriteInt(playerAccountData.playerData.hp);
+                            writer.WriteInt((int)playerAccountData.playerData.currentTile);
 
-                        writer.WriteFloat(playerAccountData.playerTransformData.scaleData.x);
+                            writer.WriteFloat(playerAccountData.playerTransformData.positionData.x);
+                            writer.WriteFloat(playerAccountData.playerTransformData.positionData.y);
 
-                        writer.WriteInt((int)playerAccountData.playerStateData.stateData);
-                        writer.WriteInt((int)playerAccountData.playerStateData.directionData);
+                            writer.WriteFloat(playerAccountData.playerTransformData.scaleData.x);
 
-                        writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[0].category);
-                        writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[0].label);
+                            writer.WriteInt((int)playerAccountData.playerStateData.stateData);
+                            writer.WriteInt((int)playerAccountData.playerStateData.directionData);
 
-                        writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[1].category);
-                        writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[1].label);
+                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[0].category);
+                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[0].label);
+
+                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[1].category);
+                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[1].label);
+                        }
                     }
 
                     byte[] packet = writer.ToArray();

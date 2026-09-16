@@ -19,6 +19,7 @@ public class NodeAStar
 
 public class AStarManager
 {
+    private MapController mapController = new MapController();
     private float Heuristic(int x1, int y1, int x2, int y2)
     {
         int dx = Math.Abs(x1 - x2);
@@ -79,13 +80,13 @@ public class AStarManager
                     continue;
 
                 // check walkable
-                if (!IsWalkable(mapData, nx, ny))
+                if (!mapController.IsWalkable(mapData, nx, ny))
                     continue;
 
                 // chống cắt góc khi đi chéo
                 if (dir.dx != 0 && dir.dy != 0)
                 {
-                    if (!IsWalkable(mapData, current.x + dir.dx, current.y) || !IsWalkable(mapData, current.x, current.y + dir.dy))
+                    if (!mapController.IsWalkable(mapData, current.x + dir.dx, current.y) || !mapController.IsWalkable(mapData, current.x, current.y + dir.dy))
                         continue;
                 }
 
@@ -155,13 +156,13 @@ public class AStarManager
                     continue;
 
                 // check walkable
-                if (!IsWalkable(mapData, nx, ny))
+                if (!mapController.IsWalkable(mapData, nx, ny))
                     continue;
 
                 // chống cắt góc khi đi chéo
                 if (dir.dx != 0 && dir.dy != 0)
                 {
-                    if (!IsWalkable(mapData, current.x + dir.dx, current.y) || !IsWalkable(mapData, current.x, current.y + dir.dy))
+                    if (!mapController.IsWalkable(mapData, current.x + dir.dx, current.y) || !mapController.IsWalkable(mapData, current.x, current.y + dir.dy))
                         continue;
                 }
 
@@ -187,11 +188,6 @@ public class AStarManager
         return null; // không tìm được đường
     }
 
-    public bool IsWalkable(MapData mapData, float worldX, float worldY)
-    {
-        MapController mapController = new MapController();
-        return mapController.IsWalkable(mapData, worldX, worldY);
-    }
     private List<(int x, int y)> ReconstructPath(NodeAStar node)
     {
         var path = new List<(int, int)>();
@@ -205,20 +201,5 @@ public class AStarManager
 
         path.Reverse();
         return path;
-    }
-
-    public TileType GetTileType(MapData mapData, float worldX, float worldY)
-    {
-        if (mapData == null)
-        {
-            return TileType.None;
-        }
-        int x = (int)Math.Floor(worldX) - mapData.offsetX;
-        int y = (int)Math.Floor(worldY) - mapData.offsetY;
-
-        if (x < 0 || y < 0 || x >= mapData.width || y >= mapData.height)
-            return TileType.None;
-
-        return (TileType)mapData.tiles[x, y];
     }
 }

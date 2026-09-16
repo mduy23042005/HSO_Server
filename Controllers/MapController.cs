@@ -120,5 +120,20 @@ public class MapController
 
         return mapData.tiles[x, y] == (byte)TileType.MapTransition;
     }
+
+    public TileType GetTileType(MapData mapData, float worldX, float worldY)
+    {
+        if (mapData == null)
+        {
+            return TileType.None;
+        }
+        int x = (int)Math.Floor(worldX) - mapData.offsetX;
+        int y = (int)Math.Floor(worldY) - mapData.offsetY;
+
+        if (x < 0 || y < 0 || x >= mapData.width || y >= mapData.height)
+            return TileType.None;
+
+        return (TileType)mapData.tiles[x, y];
+    }
 }
 

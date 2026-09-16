@@ -137,43 +137,11 @@ public class PlayerData
     public TileType currentTile;
 }
 
-public class PlayerSyncData
-{
-    public PlayerData playerData;
-    public PlayerTransformData playerTransformData;
-    public PlayerStateData playerStateData;
-}
-public class PlayerSyncDataRequestPacket
-{
-    public string cmd;
-    public PlayerSyncData playerSyncData;
-}
-public class OtherPlayerSyncData
-{
-    public PlayerData otherPlayerData;
-    public PlayerTransformData otherPlayerTransformData;
-    public PlayerStateData otherPlayerStateData;
-}
-
 public class PlayerAttackDataPacket
 {
     public EnumCmdCode cmd;
     public int idAccount;
     public int aimedMobID;
-}
-public class PlayerAttackMobDataResult
-{
-    public EnumCmdCode cmd;
-    public int aimedMobID;
-    public int damage;
-    public int hpMobAfterAttack;
-}
-public class OtherPlayerAttackMobDataResult
-{
-    public EnumCmdCode cmd;
-    public int aimedMobID;
-    public int damage;
-    public int hpMobAfterAttack;
 }
 
 public class PlayerController
@@ -295,8 +263,6 @@ public class PlayerController
                 writer.WriteFloat(accountData.playerTransformData.positionData.x);
                 writer.WriteFloat(accountData.playerTransformData.positionData.y);
 
-                writer.WriteFloat(accountData.playerTransformData.scaleData.x);
-
                 byte[] packet = writer.ToArray();
                 _ = RaceManager.Instance.SendPacketToClient(client, packet);
             }
@@ -328,6 +294,7 @@ public class PlayerController
                             playerData.playerTransformData.positionData.y = 22;
                             break;
                     }
+
                     playerData.playerData.idMap = newIDMap;
                     writer.WriteInt(newIDMap);
                     writer.WriteFloat(playerData.playerTransformData.positionData.x);

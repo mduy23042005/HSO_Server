@@ -75,6 +75,7 @@ public class MobController
     private List<(int x, int y)> path;
     private int pathIndex;
     private AStarManager astar = new AStarManager();
+    private MapController mapController = new MapController();
 
     private static readonly Random random = new Random();
 
@@ -122,7 +123,7 @@ public class MobController
             do
             {
                 endMovementPosition = ToGrid(GetRandomPosition());
-            } while (!astar.IsWalkable(map, endMovementPosition.x, endMovementPosition.y));
+            } while (!mapController.IsWalkable(map, endMovementPosition.x, endMovementPosition.y));
 
             path = astar.FindPath(map, moveArea, startPosition.x, startPosition.y, endMovementPosition.x, endMovementPosition.y);
 
@@ -158,7 +159,7 @@ public class MobController
             var nextNode = ToGrid(nextPosition);
 
             // kiểm tra nếu nextNode có thể walkable thì mới di chuyển, nếu không thì reset path
-            if (astar.IsWalkable(map, nextNode.x, nextNode.y))
+            if (mapController.IsWalkable(map, nextNode.x, nextNode.y))
             {
                 currentPosition = nextPosition;
             }
@@ -340,7 +341,7 @@ public class MobController
             var nextNode = ToGrid(nextPosition);
 
             // kiểm tra nếu nextNode có thể walkable thì mới di chuyển, nếu không thì reset path
-            if (astar.IsWalkable(map, nextNode.x, nextNode.y))
+            if (mapController.IsWalkable(map, nextNode.x, nextNode.y))
             {
                 currentPosition = nextPosition;
             }
@@ -423,11 +424,9 @@ public class MobController
     {
         if (isAttacking)
             return State.Attack;
-        if (waitAfterMove > 0f)
-            return State.Stand;
         if (isDie)
             return State.Die;
-        return State.Move;
+        return State.Stand;
     }
     public int GetIDState()
     {
