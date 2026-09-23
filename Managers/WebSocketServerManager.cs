@@ -106,7 +106,7 @@ public class WebSocketServerManager
 
             throw;
         }
-    }
+    }   
 
     private void ListenToPort(int port)
     {
@@ -422,17 +422,13 @@ public class WebSocketServerManager
 
                     foreach (var mob in mobs)
                     {
-                        var hpMob = CacheManager.Instance.GetMob(mob.id).hp;
-
-                        if (hpMob > 0)
+                        if (CacheManager.Instance.GetMob(mob.id).hp > 0)
                         {
                             mob.mobsAI.Attack(deltaTime, map, mob.id, mob.damage);
                             mob.mobsAI.Move(deltaTime, map, mob.id);
                         }
                         else
                         {
-                            mob.mobsAI.Die();
-
                             if (!mob.isRespawning)
                             {
                                 mob.isRespawning = true;
@@ -869,7 +865,7 @@ public class WebSocketServerManager
             time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Online players: [{onlinePlayers.Count}]");
 
-            await Task.Delay(60000, shutdownCts.Token);
+            await Task.Delay(60000 * 3, shutdownCts.Token);
         }
     }
     private void ShutdownServer()

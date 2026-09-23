@@ -54,9 +54,9 @@ public class MobController
 {
     private float moveSpeed = 2f;
     private float waitAfterMove = 0f;
-    private bool isAttacking = false;
     private MoveArea moveArea;
-    private bool isDie = false;
+    private bool isAttacking = false;
+    private bool isDied = false;
 
     private Vector2 currentPosition;
     private Vector2 spawnPosition;
@@ -105,7 +105,7 @@ public class MobController
         if (isAttacking)
             return;
 
-        if (isDie)
+        if (isDied)
             return;
 
         // đang nghỉ
@@ -221,7 +221,7 @@ public class MobController
     }
     public void Attack(float deltaTime, MapData map, int idMob, int mobDamage)
     {
-        if (isDie)
+        if (isDied)
             return;
 
         // cooldown đòn đánh
@@ -405,12 +405,12 @@ public class MobController
         path = null;
         idState = 0;
         attackCooldown = 0f;
-        isDie = true;
+        isDied = true;
     }
     public void Respawn()
     {
         currentPosition = spawnPosition;
-        isDie = false;
+        isDied = false;
         isAttacking = false;
         targetPlayerId = -1;
         path = null;
@@ -424,7 +424,7 @@ public class MobController
     {
         if (isAttacking)
             return State.Attack;
-        if (isDie)
+        if (isDied)
             return State.Die;
         return State.Stand;
     }
