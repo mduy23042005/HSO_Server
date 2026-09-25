@@ -335,19 +335,13 @@ public class PlayerController
 
         mob.hp = mob.hp - damage;
 
-        PacketWriterManager writer = new PacketWriterManager();
-        writer.WriteInt((int)EnumCmdCode.playerAttackMob);
-        writer.WriteInt(data.aimedMobID);
-        writer.WriteInt(damage);
-        writer.WriteInt(mob.hp);
-        await RaceManager.Instance.SendPacketToClient(client, writer.ToArray());
-
         PacketWriterManager writer1 = new PacketWriterManager();
-        writer1.WriteInt((int)EnumCmdCode.otherPlayerAttackMob);
+        writer1.WriteInt((int)EnumCmdCode.playerAttackMob);
         writer1.WriteInt(data.idAccount);
         writer1.WriteInt(data.aimedMobID);
         writer1.WriteInt(damage);
         writer1.WriteInt(mob.hp);
-        await RaceManager.Instance.SendPacketToAllClients(writer1.ToArray(), client);
+
+        await RaceManager.Instance.SendPacketToAllClients(writer1.ToArray());
     }
 }

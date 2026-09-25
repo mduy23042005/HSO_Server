@@ -363,7 +363,7 @@ The same architecture is used for other persistent game data operations.
 - Character appearance synchronization.
 - Character state synchronization.
 
-##Inventory & Equipment
+## Inventory & Equipment
 
 - Inventory management.
 - Equipment management.
