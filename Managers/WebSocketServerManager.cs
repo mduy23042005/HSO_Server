@@ -437,7 +437,7 @@ public class WebSocketServerManager
 
                                 _ = Task.Run(async () =>
                                 {
-                                    await Task.Delay(3000);
+                                    await Task.Delay(5000);
 
                                     mob.hp = mob.mob.Hp ?? 0;
                                     mob.mobsAI.Respawn();
@@ -865,7 +865,7 @@ public class WebSocketServerManager
             time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Online players: [{onlinePlayers.Count}]");
 
-            await Task.Delay(60000 * 3, shutdownCts.Token);
+            await Task.Delay(60000 * 5, shutdownCts.Token);
         }
     }
     private void ShutdownServer()
