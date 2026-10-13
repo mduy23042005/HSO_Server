@@ -2,22 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-public class InventoryRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-}
-public class InventoryResultPacket
-{
-    public EnumCmdCode cmd;
-    public List<InventoryItem0Data> inventoryItem0Data;
-    public List<InventoryItem1Data> inventoryItem1Data;
-    public List<InventoryItem2Data> inventoryItem2Data;
-    public List<InventoryItem3Data> inventoryItem3Data;
-    public List<InventoryItem4Data> inventoryItem4Data;
-}
-
-class InventoryController
+public class InventoryController
 {
     public async Task ReadCacheInventory(ClientConnection client)
     {

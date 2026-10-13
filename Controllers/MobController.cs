@@ -3,53 +3,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using HSO_Server.Models;
 
-public class SyncMobsResultData
-{
-    public int id;
-    public int idMob;
-    public string nameMob;
-    public float posX;
-    public float posY;
-    public int maxHP;
-    public int hp;
-    public int level;
-    public State state;
-    public int idState;
-    public Direction direction;
-    public TileType currentTile;
-}
-public class SyncMobsResultPacket
-{
-    public string cmd;
-    public List<SyncMobsResultPacket> mobs;
-}
-
-public class MoveArea
-{
-    /// <summary>
-    /// centerX = offset(Unity)
-    /// minX = posX - sizeX / 2
-    /// maxX = posX + sizeX / 2
-    /// minY = posY - sizeY / 2
-    /// maxY = posY + sizeY / 2
-    /// </summary>
-    public float minX; // minX, minY ----------- maxX, minY
-    public float minY; //     |                      |
-    public float maxX; //     |                      |
-    public float maxY; // minX, maxY ----------- maxX, maxY
-}
-public class MobData
-{
-    public Mob mob;
-    public int id;
-    public int hp;
-    public int damage;
-    public int posX;
-    public int posY;
-    public bool isRespawning;
-
-    public MobController mobsAI;
-}
 public class MobController
 {
     private float moveSpeed = 2f;

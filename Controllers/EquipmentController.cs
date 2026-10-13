@@ -2,18 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-public class EquipmentRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-}
-public class EquipmentResultPacket
-{
-    public EnumCmdCode cmd;
-    public List<EquipmentData> equipmentData;
-}
-
-class EquipmentController
+public class EquipmentController
 {
     public async Task ReadCacheEquipment(ClientConnection client)
     {

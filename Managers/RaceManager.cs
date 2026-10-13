@@ -122,6 +122,37 @@ public sealed class RaceManager
 
         await Task.WhenAll(tasks);
     }
+    public async Task SendPacketToAllClientsInMap(int mapID, byte[] data, ClientConnection excludedClient = null)
+    {
+        if (data == null)
+            return;
+
+        List<ClientConnection> snapshot = CreateClientSnapshot();
+        List<Task> tasks = new List<Task>();
+
+        foreach (ClientConnection client in snapshot)
+        {
+            if (client == excludedClient)
+                continue;
+
+            if (client.socket == null || client.socket.State != WebSocketState.Open)
+                continue;
+
+            var map = CacheManager.Instance.GetMap(mapID);
+            if (map == null || map.mobsData == null)
+                continue;
+
+            var idAccount = GetIDAccount(client);
+            var accountData = CacheManager.Instance.GetAccountData(idAccount);
+
+            if (accountData.playerData.idMap != mapID)
+                continue;
+
+            tasks.Add(SendPacketToClient(client, data));
+        }
+
+        await Task.WhenAll(tasks);
+    }
     public async Task SendPacketToClient(ClientConnection targetClient, byte[] data)
     {
         if (targetClient == null)

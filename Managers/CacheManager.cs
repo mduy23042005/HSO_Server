@@ -1,123 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using HSO_Server.Models;
-
-public class NPCData
-{
-    public Npc npc;
-    public int posX;
-    public int posY;
-}
-
-//Trang bị riêng từng school
-public class Item0Data
-{
-    public Item0 item0;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
-}
-//Trang bị chung
-public class Item1Data
-{
-    public Item1 item1;
-    public List<Item1Attribute> item1_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
-}
-//Vật phẩm nhiệm vụ
-public class Item2Data
-{
-    public Item2 item2;
-}
-//Vật phẩm tiêu hao
-public class Item3Data
-{
-    public Item3 item3;
-}
-//Vật phẩm cường hóa
-public class Item4Data
-{
-    public Item4 item4;
-}
-
-//Tài nguyên của player
-public class EquipmentData
-{
-    public int id;
-    public int idItem0_1;
-    public string nameItem0_1;
-    public int category;
-    public string slotName;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
-}
-public class InventoryItem0Data
-{
-    public int id;
-    public int idItem0;
-    public string nameItem0;
-    public string typeItem0;
-    public int category;
-    public int idSchool;
-    public int level;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
-}
-public class InventoryItem1Data
-{
-    public int id;
-    public int idItem1;
-    public string nameItem1;
-    public string typeItem1;
-    public int level;
-    public List<Item1Attribute> item1_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
-}
-public class InventoryItem2Data
-{
-    public int id;
-    public int idItem2;
-    public string nameItem2;
-    public int level;
-    public int quality;
-}
-public class InventoryItem3Data
-{
-    public int id;
-    public int idItem3;
-    public string nameItem3;
-    public int level;
-    public string details;
-    public int quality;
-}
-public class InventoryItem4Data
-{
-    public int id;
-    public int idItem4;
-    public string nameItem4;
-    public int level;
-    public string details;
-    public int quality;
-}
-public class ChestData
-{
-    public List<ChestItemX> chestItems;
-}
-
-public class AccountData
-{
-    public Account account;
-    public List<EquipmentData> equipments;
-    public List<InventoryItem0Data> inventoryItem0s;
-    public List<InventoryItem1Data> inventoryItem1s;
-    public List<InventoryItem2Data> inventoryItem2s;
-    public List<InventoryItem3Data> inventoryItem3s;
-    public List<InventoryItem4Data> inventoryItem4s;
-    public Chest chest;
-
-    public PlayerData playerData;
-    public PlayerStateData playerStateData;
-    public PlayerTransformData playerTransformData;
-}
 
 public class CacheManager
 {
@@ -136,6 +18,9 @@ public class CacheManager
     private Dictionary<int, Item4Data> item4s;
 
     private Dictionary<int, AccountData> accounts;
+
+    private Dictionary<int, int[]> droppedItem0sMob = new Dictionary<int, int[]>();
+    private Dictionary<int, int[]> droppedItem0sBoss = new Dictionary<int, int[]>();
 
     public void InitCache()
     {
@@ -201,6 +86,10 @@ public class CacheManager
     {
         return mobs.Count;
     }
+    public Dictionary<int, MobData> GetAllMobs()
+    {
+        return mobs;
+    }
 
     //NPC
     public void AddNPC(NPCData data)
@@ -215,6 +104,36 @@ public class CacheManager
     public int GetCountNPC()
     {
         return npcs.Count;
+    }
+
+    //DroppedItem0sMob
+    public void AddDroppedItem0sMob(int mobId, int[] item0Ids)
+    {
+        droppedItem0sMob[mobId] = item0Ids;
+    }
+    public int[] GetDroppedItem0sMob(int mobId)
+    {
+        droppedItem0sMob.TryGetValue(mobId, out var item0Ids);
+        return item0Ids;
+    }
+    public int GetCountDroppedItem0sMob()
+    {
+        return droppedItem0sMob.Count;
+    }
+
+    //DroppedItem0sBoss
+    public void AddDroppedItem0sBoss(int bossId, int[] item0Ids)
+    {
+        droppedItem0sBoss[bossId] = item0Ids;
+    }
+    public int[] GetDroppedItem0sBoss(int bossId)
+    {
+        droppedItem0sBoss.TryGetValue(bossId, out var item0Ids);
+        return item0Ids;
+    }
+    public int GetCountDroppedItem0sBoss()
+    {
+        return droppedItem0sBoss.Count;
     }
 
     //Item0

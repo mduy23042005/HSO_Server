@@ -28,4 +28,8 @@
 
     playerAttackMob = 0x0400,
     otherPlayerAttackMob = 0x0401,
+
+    dropItem0 = 0x0500,
+    dropItem1 = 0x0501,
+    dropItem2 = 0x0502,
 }

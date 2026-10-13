@@ -1,36 +1,6 @@
 ﻿using Newtonsoft.Json;
 using HSO_Server.Models;
 
-//class hứng dữ liệu từ client gửi lên
-public class LogInRequestPacket
-{
-    public EnumCmdCode cmd;
-    public string username;
-    public string password;
-}
-//class trả dữ liệu về client
-public class LogInResultPacket
-{
-    public EnumCmdCode cmd;
-    public bool success;
-    public int idAccount;
-    public int idSchool;
-    public string nameChar;
-    public int hair;
-    public int level;
-    public int maxHP;
-    public int maxMP;
-    public int hp;
-    public int mp;
-    public string message;
-}
-
-public class LogOutRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-}
-
 public class LogInController
 {
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");

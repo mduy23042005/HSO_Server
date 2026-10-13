@@ -79,6 +79,11 @@ public class WebSocketServerManager
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Loading data...");
             await LoadData();
 
+            time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
+            Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initializing Dropped Items...");
+            DroppedItemManager.Instance.InitDroppedItem0s();
+            Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized Dropped Items successfully! [{CacheManager.Instance.GetCountDroppedItem0sMob()}]");
+
             _ = Task.Run(UpdateMobsLoop);
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized UpdateMobs loop successfully!");
 
@@ -434,7 +439,8 @@ public class WebSocketServerManager
                                 mob.isRespawning = true;
 
                                 mob.mobsAI.Die();
-
+                                DroppedItemManager.Instance.DropItem0Mob(mob.id, mob.mob.Idmob, map);
+                           
                                 _ = Task.Run(async () =>
                                 {
                                     await Task.Delay(5000);

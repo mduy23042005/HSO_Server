@@ -5,23 +5,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using HSO_Server.Models;
 
-public class RegisterRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idSchool;
-    public string nameChar;
-    public string username;
-    public string password;
-    public int hair;
-    public int blessingPoints;
-}
-public class RegisterResultPacket
-{
-    public EnumCmdCode cmd;
-    public bool success;
-}
-
-class RegisterController
+public class RegisterController
 {
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
     private DateTime time;
