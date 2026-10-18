@@ -345,3 +345,36 @@ public class LogInResultPacket
     public string message;
 }
 
+public class DroppedItem0Data
+{
+    public int idMap;
+    public int id; // id xác định chính xác con quái trong map
+    public int idItem0;
+    public float posX;
+    public float posY;
+    public string nameItem0;
+}
+
+public enum TileType
+{
+    None = -1,
+    Ground = 0,
+    Water = 1,
+    Wall = 2,
+    Decoration = 3,
+    MapTransition = 4
+}
+public class MapData
+{
+    public Map map;
+    public List<MobData> mobsData;
+    public List<NPCData> npcsData;
+
+    public int width;
+    public int height;
+
+    public int offsetX;
+    public int offsetY;
+
+    public byte[,] tiles;
+}

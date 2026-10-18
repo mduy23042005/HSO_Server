@@ -29,9 +29,6 @@ public class WebSocketServerManager
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
     private DateTime time;
 
-    private Dictionary<ClientConnection, Dictionary<int, MobData>> mobsInViewAreaSnapshot = new Dictionary<ClientConnection, Dictionary<int, MobData>>();
-    private Dictionary<ClientConnection, Dictionary<int, ClientConnection>> playersInViewAreaSnapshot = new Dictionary<ClientConnection, Dictionary<int, ClientConnection>>();
-
     public static void Main(string[] args)
     {
         WebSocketServerManager server = new WebSocketServerManager();
@@ -84,19 +81,22 @@ public class WebSocketServerManager
             DroppedItemManager.Instance.InitDroppedItem0s();
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized Dropped Items successfully! [{CacheManager.Instance.GetCountDroppedItem0sMob()}]");
 
-            _ = Task.Run(UpdateMobsLoop);
+            _ = Task.Run(() => MobManager.Instance.UpdateMobsLoop(shutdownCts));
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized UpdateMobs loop successfully!");
 
-            _ = Task.Run(SyncMobsLoop);
+            _ = Task.Run(() => MobManager.Instance.SyncMobsLoop(shutdownCts));
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncMobs loop successfully!");
 
-            _ = Task.Run(SyncOtherPlayersLoop);
+            _ = Task.Run(() => DroppedItemManager.Instance.SyncDroppedItemsLoop(shutdownCts));
+            Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncDroppedItems loop successfully!");
+
+            _ = Task.Run(() => PlayerManager.Instance.SyncOtherPlayersLoop(shutdownCts));
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncOtherPlayers loop successfully!");
 
-            _ = Task.Run(SyncOtherPlayersRealtimeLoop);
+            _ = Task.Run(() => PlayerManager.Instance.SyncOtherPlayersRealtimeLoop(shutdownCts));
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncOtherPlayersRealtime loop successfully!");
             
-            _ = Task.Run(CountOnlinePlayers);
+            _ = Task.Run(CountOnlinePlayersLoop);
             _ = Task.Run(ListenForQuit);
 
             //Chấp nhận kết nối từ client
@@ -402,184 +402,10 @@ public class WebSocketServerManager
             }
         }
     }
-    private async Task UpdateMobsLoop()
-    {
-        const int targetTickRate = 10;
-        const int tickMS = 1000 / targetTickRate;
-
-        var stopwatch = new Stopwatch();
-
-        while (!shutdownCts.IsCancellationRequested)
-        {
-            stopwatch.Restart();
-            try
-            {
-                float deltaTime = 1f / targetTickRate;
-
-                for (int i = 1; i <= CacheManager.Instance.GetCountMap(); i = i + 1)
-                {
-                    var map = CacheManager.Instance.GetMap(i);
-
-                    if (map == null || map.mobsData == null)
-                        continue;
-
-                    var mobs = map.mobsData;
-
-                    foreach (var mob in mobs)
-                    {
-                        if (CacheManager.Instance.GetMob(mob.id).hp > 0)
-                        {
-                            mob.mobsAI.Attack(deltaTime, map, mob.id, mob.damage);
-                            mob.mobsAI.Move(deltaTime, map, mob.id);
-                        }
-                        else
-                        {
-                            if (!mob.isRespawning)
-                            {
-                                mob.isRespawning = true;
-
-                                mob.mobsAI.Die();
-                                DroppedItemManager.Instance.DropItem0Mob(mob.id, mob.mob.Idmob, map);
-                           
-                                _ = Task.Run(async () =>
-                                {
-                                    await Task.Delay(5000);
-
-                                    mob.hp = mob.mob.Hp ?? 0;
-                                    mob.mobsAI.Respawn();
-                                    mob.isRespawning = false;
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[Server] Update Mobs error: " + ex.Message);
-            }
-
-            stopwatch.Stop();
-            int sleep = tickMS - (int)stopwatch.ElapsedMilliseconds;
-            if (sleep > 0)
-                await Task.Delay(sleep, shutdownCts.Token);
-        }
-    }
-    private async Task SyncMobsLoop()
-    {
-        const int targetTickRate = 20;
-        const int tickMS = 1000 / targetTickRate;
-
-        var stopwatch = new Stopwatch();
-
-        MapController mapController = new MapController();
-
-        while (!shutdownCts.IsCancellationRequested)
-        {
-            stopwatch.Restart();
-            try
-            {
-                foreach (var client in RaceManager.Instance.GetAllClients())
-                {
-                    var idAccount = RaceManager.Instance.GetIDAccount(client);
-                    if (idAccount <= 0)
-                        continue;
-
-                    var accountData = CacheManager.Instance.GetAccountData(idAccount);
-                    if (accountData == null || accountData.playerTransformData == null || accountData.playerData == null)
-                        continue;
-
-                    var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
-                    if (map == null || map.mobsData == null)
-                        continue;
-
-                    Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
-
-                    int minX = (int)playerPosition.X - 15;
-                    int maxX = (int)playerPosition.X + 15;
-
-                    int minY = (int)playerPosition.Y - 10;
-                    int maxY = (int)playerPosition.Y + 10;
-
-                    if (!mobsInViewAreaSnapshot.TryGetValue(client, out var mobsInViewArea))
-                    {
-                        mobsInViewArea = new Dictionary<int, MobData>();
-                        mobsInViewAreaSnapshot.Add(client, mobsInViewArea);
-                    }
-
-                    mobsInViewArea.Clear();
-
-                    lock (MapController.mapMobs)
-                    {
-                        for (int y = minY; y <= maxY; y++)
-                        {
-                            for (int x = minX; x <= maxX; x++)
-                            {
-                                if (!MapController.mapMobs[map.map.Idmap].TryGetValue((x, y), out var mobsInCell))
-                                    continue;
-
-                                foreach (var mob in mobsInCell) 
-                                {
-                                    mobsInViewArea.TryAdd(mob.id, mob);
-                                }
-                            }
-                        }
-                    }
-
-                    PacketWriterManager writer = new PacketWriterManager();
-                    writer.WriteInt((int)EnumCmdCode.syncMobsData);
-                    writer.WriteInt(mobsInViewArea.Count);
-
-                    foreach (var mob in mobsInViewArea.Values)
-                    {
-                        var currentHPMob = CacheManager.Instance.GetMob(mob.id).hp;
-                        var currentTile = mapController.GetTileType(map, mob.mobsAI.GetCurrentPosition().X - map.offsetX, mob.mobsAI.GetCurrentPosition().Y - map.offsetY);
-
-                        writer.WriteInt(mob.id);
-                        writer.WriteInt(mob.mob.Idmob);
-                        writer.WriteInt(mob.mob.Hp ?? 0);
-                        writer.WriteInt(currentHPMob);
-                        writer.WriteInt(mob.mob.Level ?? 1);
-                        writer.WriteFloat(mob.mobsAI.GetCurrentPosition().X);
-                        writer.WriteFloat(mob.mobsAI.GetCurrentPosition().Y);
-                        writer.WriteInt((int)mob.mobsAI.GetState());
-                        writer.WriteInt(mob.mobsAI.GetIDState());
-                        writer.WriteInt((int)mob.mobsAI.GetDirection());
-                        writer.WriteInt((int)currentTile);
-                    }
-
-                    byte[] packet = writer.ToArray();
-
-                    try
-                    {
-                        await RaceManager.Instance.SendPacketToClient(client, packet);
-                    }
-                    catch { }
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[Server] Sync Mobs error: " + ex.Message);
-            }
-
-            stopwatch.Stop();
-            int sleep = tickMS - (int)stopwatch.ElapsedMilliseconds;
-            if (sleep > 0)
-                await Task.Delay(sleep, shutdownCts.Token);
-        }
-    }
-    private async Task SyncOtherPlayersLoop()
+    private async Task CountOnlinePlayersLoop()
     {
         const int targetTickRate = 1;
-        const int tickMS = 2000 / targetTickRate;
+        const int tickMS = 1000000 / targetTickRate;
 
         var stopwatch = new Stopwatch();
 
@@ -589,94 +415,22 @@ public class WebSocketServerManager
 
             try
             {
-                foreach (var client in RaceManager.Instance.GetAllClients())
+                var clients = RaceManager.Instance.GetAllClients();
+
+                var onlinePlayers = new List<int>();
+
+                foreach (var client in clients)
                 {
-                    var idAccount = RaceManager.Instance.GetIDAccount(client);
-                    if (idAccount <= 0)
-                        continue;
+                    int idAccount = RaceManager.Instance.GetIDAccount(client);
 
-                    var accountData = CacheManager.Instance.GetAccountData(idAccount);
-                    if (accountData == null || accountData.playerTransformData == null || accountData.playerData == null)
-                        continue;
-
-                    var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
-                    if (map == null)
-                        continue;
-
-                    Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
-
-                    int minX = (int)playerPosition.X - 15;
-                    int maxX = (int)playerPosition.X + 15;
-
-                    int minY = (int)playerPosition.Y - 10;
-                    int maxY = (int)playerPosition.Y + 10;
-
-                    PacketWriterManager writer = new PacketWriterManager();
-
-                    lock (playersInViewAreaSnapshot)
+                    if (idAccount > 0)
                     {
-                        if (!playersInViewAreaSnapshot.TryGetValue(client, out var playersInViewArea))
-                        {
-                            playersInViewArea = new Dictionary<int, ClientConnection>();
-                            playersInViewAreaSnapshot.Add(client, playersInViewArea);
-                        }
-
-                        playersInViewArea.Clear();
-
-                        lock (MapController.mapPlayers)
-                        {
-                            for (int y = minY; y <= maxY; y++)
-                            {
-                                for (int x = minX; x <= maxX; x++)
-                                {
-                                    if (!MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
-                                        continue;
-
-                                    foreach (var player in playersInCell)
-                                    {
-                                        if (RaceManager.Instance.GetIDAccount(player) == 0)
-                                            continue;
-
-                                        playersInViewArea.Add(RaceManager.Instance.GetIDAccount(player), player);
-                                    }
-                                }
-                            }
-                        }
-
-                        writer.WriteInt((int)EnumCmdCode.syncOtherPlayersData);
-                        writer.WriteListCount(playersInViewArea.Count - 1);
-
-                        foreach (var player in playersInViewArea)
-                        {
-                            if (idAccount == player.Key)
-                                continue;
-
-                            var playerAccountData = CacheManager.Instance.GetAccountData(player.Key);
-
-                            if (playerAccountData == null || playerAccountData.playerData == null)
-                                continue;
-
-                            writer.WriteInt(playerAccountData.playerData.idAccount);
-                            writer.WriteString(playerAccountData.playerData.nameChar);
-                            writer.WriteInt(playerAccountData.playerData.level);
-                            writer.WriteInt(playerAccountData.playerData.idSchool);
-                            writer.WriteInt(playerAccountData.playerData.hair);
-                            writer.WriteInt(playerAccountData.playerData.weapon);
-                            writer.WriteInt(playerAccountData.playerData.helmet);
-                            writer.WriteInt(playerAccountData.playerData.armor);
-                            writer.WriteInt(playerAccountData.playerData.legArmor);
-                        }
-
+                        onlinePlayers.Add(idAccount);
                     }
-
-                    byte[] packet = writer.ToArray();
-
-                    try
-                    {
-                        await RaceManager.Instance.SendPacketToClient(client, packet);
-                    }
-                    catch { }
                 }
+
+                time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
+                Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Online players: [{onlinePlayers.Count}]");
             }
             catch (TaskCanceledException)
             {
@@ -684,143 +438,15 @@ public class WebSocketServerManager
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[Server] Sync other player error: " + ex.Message);
+                Console.WriteLine("[Server] Count online players error: " + ex.Message);
             }
 
             stopwatch.Stop();
             int sleep = tickMS - (int)stopwatch.ElapsedMilliseconds;
-
             if (sleep > 0)
                 await Task.Delay(sleep, shutdownCts.Token);
         }
     }
-    private async Task SyncOtherPlayersRealtimeLoop()
-    {
-        const int targetTickRate = 30;
-        const int tickMS = 1000 / targetTickRate;
-
-        var stopwatch = new Stopwatch();
-
-        while (!shutdownCts.IsCancellationRequested)
-        {
-            stopwatch.Restart();
-
-            try
-            {
-                foreach (var client in RaceManager.Instance.GetAllClients())
-                {
-                    var idAccount = RaceManager.Instance.GetIDAccount(client);
-                    if (idAccount <= 0)
-                        continue;
-
-                    var accountData = CacheManager.Instance.GetAccountData(idAccount);
-                    if (accountData == null || accountData.playerTransformData == null || accountData.playerData == null)
-                        continue;
-
-                    var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
-                    if (map == null)
-                        continue;
-
-                    Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
-
-                    int minX = (int)playerPosition.X - 15;
-                    int maxX = (int)playerPosition.X + 15;
-
-                    int minY = (int)playerPosition.Y - 10;
-                    int maxY = (int)playerPosition.Y + 10;
-
-                    PacketWriterManager writer = new PacketWriterManager();
-
-                    lock (playersInViewAreaSnapshot)
-                    {
-                        if (!playersInViewAreaSnapshot.TryGetValue(client, out var playersInViewArea))
-                        {
-                            playersInViewArea = new Dictionary<int, ClientConnection>();
-                            playersInViewAreaSnapshot.Add(client, playersInViewArea);
-                        }
-
-                        playersInViewArea.Clear();
-
-                        lock (MapController.mapPlayers)
-                        {
-                            for (int y = minY; y <= maxY; y++)
-                            {
-                                for (int x = minX; x <= maxX; x++)
-                                {
-                                    if (!MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
-                                        continue;
-
-                                    foreach (var player in playersInCell)
-                                    {
-                                        if (RaceManager.Instance.GetIDAccount(player) == 0)
-                                            continue;
-
-                                        playersInViewArea.Add(RaceManager.Instance.GetIDAccount(player), player);
-                                    }
-                                }
-                            }
-                        }
-
-                        writer.WriteInt((int)EnumCmdCode.syncOtherPlayersRealtimeData);
-                        writer.WriteListCount(playersInViewArea.Count - 1);
-
-                        foreach (var player in playersInViewArea)
-                        {
-                            if (idAccount == player.Key)
-                                continue;
-
-                            var playerAccountData = CacheManager.Instance.GetAccountData(player.Key);
-
-                            if (playerAccountData == null || playerAccountData.playerData == null)
-                                continue;
-
-                            writer.WriteInt(playerAccountData.playerData.idAccount);
-                            writer.WriteInt(playerAccountData.playerData.maxHP);
-                            writer.WriteInt(playerAccountData.playerData.hp);
-                            writer.WriteInt((int)playerAccountData.playerData.currentTile);
-
-                            writer.WriteFloat(playerAccountData.playerTransformData.positionData.x);
-                            writer.WriteFloat(playerAccountData.playerTransformData.positionData.y);
-
-                            writer.WriteFloat(playerAccountData.playerTransformData.scaleData.x);
-
-                            writer.WriteInt((int)playerAccountData.playerStateData.stateData);
-                            writer.WriteInt((int)playerAccountData.playerStateData.directionData);
-
-                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[0].category);
-                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[0].label);
-
-                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[1].category);
-                            writer.WriteInt((int)playerAccountData.playerStateData.partBodyTransforms[1].label);
-                        }
-                    }
-
-                    byte[] packet = writer.ToArray();
-
-                    try
-                    {
-                        await RaceManager.Instance.SendPacketToClient(client, packet);
-                    }
-                    catch { }
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[Server] Sync other player error: " + ex.Message);
-            }
-
-            stopwatch.Stop();
-            int sleep = tickMS - (int)stopwatch.ElapsedMilliseconds;
-
-            if (sleep > 0)
-                await Task.Delay(sleep, shutdownCts.Token);
-        }
-    }
-
     private void ListenForQuit()
     {
         while (!shutdownCts.IsCancellationRequested)
@@ -840,7 +466,24 @@ public class WebSocketServerManager
 
                 if (confirm == "y")
                 {
-                    ShutdownServer();
+                    if (isShuttingDown) return;
+                    isShuttingDown = true;
+
+                    time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
+                    Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Shutting down...");
+
+                    // Báo toàn bộ task dừng
+                    shutdownCts.Cancel();
+
+                    // Logout toàn bộ client
+                    RaceManager.Instance.MarkLogOutAll();
+
+                    // Stop listener
+                    listener.Stop();
+
+                    time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
+                    Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Shutdown completed.");
+                    Environment.Exit(0);
                     return;
                 }
                 else
@@ -849,51 +492,6 @@ public class WebSocketServerManager
                 }
             }
         }
-    }
-    private async Task CountOnlinePlayers()
-    {
-        while (!shutdownCts.IsCancellationRequested)
-        {
-            var clients = RaceManager.Instance.GetAllClients();
-
-            var onlinePlayers = new List<int>();
-
-            foreach (var client in clients)
-            {
-                int idAccount = RaceManager.Instance.GetIDAccount(client);
-
-                if (idAccount > 0)
-                {
-                    onlinePlayers.Add(idAccount);
-                }
-            }
-
-            time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
-            Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Online players: [{onlinePlayers.Count}]");
-
-            await Task.Delay(60000 * 5, shutdownCts.Token);
-        }
-    }
-    private void ShutdownServer()
-    {
-        if (isShuttingDown) return;
-        isShuttingDown = true;
-
-        time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
-        Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Shutting down...");
-
-        // Báo toàn bộ task dừng
-        shutdownCts.Cancel();
-
-        // Logout toàn bộ client
-        RaceManager.Instance.MarkLogOutAll();
-
-        // Stop listener
-        listener.Stop();
-
-        time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
-        Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Shutdown completed.");
-        Environment.Exit(0);
     }
 
     private async Task ReceivePacketFromClient(ClientConnection client, byte[] data)

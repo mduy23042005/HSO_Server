@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 public sealed class RaceManager
 {
-    private static readonly Lazy<RaceManager> lazyInstance = new Lazy<RaceManager>(() => new RaceManager());
     private readonly Dictionary<ClientConnection, SemaphoreSlim> socketSendLocks = new Dictionary<ClientConnection, SemaphoreSlim>();
     private readonly HashSet<ClientConnection> logoutClients = new HashSet<ClientConnection>();
 
@@ -18,6 +17,7 @@ public sealed class RaceManager
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
     private DateTime time;
 
+    private static readonly Lazy<RaceManager> lazyInstance = new Lazy<RaceManager>(() => new RaceManager());
     public static RaceManager Instance => lazyInstance.Value;
     private RaceManager()
     {

@@ -3,35 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using HSO_Server.Models;
 
-public enum TileType
-{
-    None = -1,
-    Ground = 0,
-    Water = 1,
-    Wall = 2,
-    Decoration = 3,
-    MapTransition = 4
-}
-public class MapData
-{
-    public Map map;
-    public List<MobData> mobsData;
-    public List<NPCData> npcsData;
-
-    public int width;
-    public int height;
-
-    public int offsetX;
-    public int offsetY;
-
-    public byte[,] tiles;
-}
-
 public class MapController
 {
     // idMap, (tất cả các cell) -> mỗi cell, các object trong cell đó
     public static Dictionary<int, Dictionary<(int, int), List<MobData>>> mapMobs = new Dictionary<int, Dictionary<(int, int), List<MobData>>>();
     public static Dictionary<int, Dictionary<(int, int), List<ClientConnection>>> mapPlayers = new Dictionary<int, Dictionary<(int, int), List<ClientConnection>>>();
+    public static Dictionary<int, Dictionary<(int, int), List<DroppedItem0Data>>> mapDroppedItem0s = new Dictionary<int, Dictionary<(int, int), List<DroppedItem0Data>>>();
 
     public void InitMap(MapData mapData)
     {
@@ -77,6 +54,7 @@ public class MapController
 
         mapMobs[mapData.map.Idmap] = new Dictionary<(int, int), List<MobData>>();
         mapPlayers[mapData.map.Idmap] = new Dictionary<(int, int), List<ClientConnection>>();
+        mapDroppedItem0s[mapData.map.Idmap] = new Dictionary<(int, int), List<DroppedItem0Data>>();
 
         for (int y = 0; y < mapData.height; y++)
         {
@@ -85,6 +63,7 @@ public class MapController
                 //mapMobs là Dictionary truy theo idMap để lấy 1 cái Dictionary chứa tất cả các cell.
                 mapMobs[mapData.map.Idmap][(x, y)] = new List<MobData>();
                 mapPlayers[mapData.map.Idmap][(x, y)] = new List<ClientConnection>();
+                mapDroppedItem0s[mapData.map.Idmap][(x, y)] = new List<DroppedItem0Data>();
             }
         }
     }

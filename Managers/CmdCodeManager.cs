@@ -32,4 +32,12 @@
     dropItem0 = 0x0500,
     dropItem1 = 0x0501,
     dropItem2 = 0x0502,
+    dropItem3 = 0x0503,
+    dropItem4 = 0x0504,
+
+    dropItem0s = 0x0510,
+    dropItem1s = 0x0511,
+    dropItem2s = 0x0512,
+    dropItem3s = 0x0513,
+    dropItem4s = 0x0514,
 }
