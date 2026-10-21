@@ -117,16 +117,6 @@ public class AccountData
     public PlayerTransformData playerTransformData;
 }
 
-public class RegisterRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idSchool;
-    public string nameChar;
-    public string username;
-    public string password;
-    public int hair;
-    public int blessingPoints;
-}
 public class RegisterResultPacket
 {
     public EnumCmdCode cmd;
@@ -298,13 +288,6 @@ public class PlayerData
     public TileType currentTile;
 }
 
-public class PlayerAttackDataPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-    public int aimedMobID;
-}
-
 public class EquipmentResultPacket
 {
     public EnumCmdCode cmd;
@@ -321,13 +304,6 @@ public class InventoryResultPacket
     public List<InventoryItem4Data> inventoryItem4Data;
 }
 
-//class hứng dữ liệu từ client gửi lên
-public class LogInRequestPacket
-{
-    public EnumCmdCode cmd;
-    public string username;
-    public string password;
-}
 //class trả dữ liệu về client
 public class LogInResultPacket
 {
@@ -377,4 +353,20 @@ public class MapData
     public int offsetY;
 
     public byte[,] tiles;
+}
+
+public class ReadAttributesEquipmentResultPacket
+{
+    public EnumCmdCode cmd;
+    public EquipmentData attributesData;
+}
+
+public class ReadAttributesInventoryResultPacket
+{
+    public EnumCmdCode cmd;
+    public InventoryItem0Data attributesItem0Data;
+    public InventoryItem1Data attributesItem1Data;
+    public InventoryItem2Data attributesItem2Data;
+    public InventoryItem3Data attributesItem3Data;
+    public InventoryItem4Data attributesItem4Data;
 }

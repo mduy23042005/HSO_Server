@@ -10,10 +10,10 @@ public class RegisterController
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
     private DateTime time;
 
-    public async Task ClickRegister(ClientConnection client, RegisterRequestPacket registerPacket)
+    public async Task ClickRegister(ClientConnection client, int idSchool, string nameChar, string username, string password, int hair, int blessingPoints)
     {
         int weapon = 0, helmet = 0, armor = 0, legArmor = 0;
-        switch (registerPacket.idSchool)
+        switch (idSchool)
         {
             case 1: weapon = 1; helmet = 9; armor = 17; legArmor = 25; break;
             case 2: weapon = 2; helmet = 10; armor = 18; legArmor = 26; break;
@@ -25,15 +25,15 @@ public class RegisterController
         {
             Account = new Account
             {
-                Username = registerPacket.username,
-                Password = registerPacket.password,
-                NameChar = registerPacket.nameChar,
-                Idschool = registerPacket.idSchool,
+                Username = username,
+                Password = password,
+                NameChar = nameChar,
+                Idschool = idSchool,
                 Level = 1,
                 SkillPoints = 0,
                 StatPoints = 0,
                 Exp = 0,
-                Hair = registerPacket.hair,
+                Hair = hair,
                 Gold = 20000,
                 Gem = 2000,
                 Point0 = 5,
@@ -64,7 +64,7 @@ public class RegisterController
                 Skill19 = 0,
                 Skill20 = 0,
                 Clan = null,
-                BlessingPoints = registerPacket.blessingPoints
+                BlessingPoints = blessingPoints
             },
             Equipment = new List<AccountEquipment>
             {

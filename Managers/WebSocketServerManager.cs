@@ -509,26 +509,24 @@ public class WebSocketServerManager
                     break;
 
                 case EnumCmdCode.login:
-                    var loginPacket = new LogInRequestPacket();
-                    loginPacket.username = reader.ReadString();
-                    loginPacket.password = reader.ReadString();
+                    string usernameLogin = reader.ReadString();
+                    string passwordLogin = reader.ReadString();
 
                     var loginController = new LogInController();
-                    await loginController.ClickLogIn(client, loginPacket);
+                    await loginController.ClickLogIn(client, usernameLogin, passwordLogin);
                     break;
 
                 case EnumCmdCode.register:
                     Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Received register request from client: {client.ipRemote}.");
-                    var registerPacket = new RegisterRequestPacket();
-                    registerPacket.idSchool = reader.ReadInt();
-                    registerPacket.nameChar = reader.ReadString();
-                    registerPacket.username = reader.ReadString();
-                    registerPacket.password = reader.ReadString();
-                    registerPacket.hair = reader.ReadInt();
-                    registerPacket.blessingPoints = reader.ReadInt();
+                    int idSchool = reader.ReadInt();
+                    string nameChar = reader.ReadString();
+                    string usernameRegister = reader.ReadString();
+                    string passwordRegister = reader.ReadString();
+                    int hair = reader.ReadInt();
+                    int blessingPoints = reader.ReadInt();
 
                     var registerController = new RegisterController();
-                    await registerController.ClickRegister(client, registerPacket);
+                    await registerController.ClickRegister(client, idSchool, nameChar, usernameRegister, passwordRegister, hair, blessingPoints);
                     break;
 
                 case EnumCmdCode.equipment:
@@ -537,13 +535,12 @@ public class WebSocketServerManager
                     break;
 
                 case EnumCmdCode.equipmentAttributes:
-                    var equipmentAttributesRequestPacket = new ReadAttributesEquipmentRequestPacket();
-                    equipmentAttributesRequestPacket.idAccount = reader.ReadInt();
-                    equipmentAttributesRequestPacket.id = reader.ReadInt();
-                    equipmentAttributesRequestPacket.idItem0_1 = reader.ReadInt();
+                    int idAccountEquipmentAttributes = reader.ReadInt();
+                    int idEquipmentAttributes = reader.ReadInt();
+                    int idItem0_1EquipmentAttributes = reader.ReadInt();
 
                     var readAttributesEquipmentController = new ReadAttributesController();
-                    await readAttributesEquipmentController.ReadAttributesEquipment(client, equipmentAttributesRequestPacket);
+                    await readAttributesEquipmentController.ReadAttributesEquipment(client, idAccountEquipmentAttributes, idEquipmentAttributes, idItem0_1EquipmentAttributes);
                     break;
 
                 case EnumCmdCode.inventory:
@@ -552,33 +549,39 @@ public class WebSocketServerManager
                     break;
 
                 case EnumCmdCode.inventoryAttributes:
-                    var inventoryAttributesRequestPacket = new ReadAttributesInventoryRequestPacket();
-                    inventoryAttributesRequestPacket.idAccount = reader.ReadInt();
-                    inventoryAttributesRequestPacket.id = reader.ReadInt();
-                    inventoryAttributesRequestPacket.idItem0 = reader.ReadInt();
+                    int idAccountInventoryAttributes = reader.ReadInt();
+                    int idInventoryAttributes = reader.ReadInt();
+                    int idItem0InventoryAttributes = reader.ReadInt();
 
                     var readAttributesInventoryController = new ReadAttributesController();
-                    await readAttributesInventoryController.ReadAttributesInventory(client, inventoryAttributesRequestPacket);
+                    await readAttributesInventoryController.ReadAttributesInventory(client, idAccountInventoryAttributes, idInventoryAttributes, idItem0InventoryAttributes);
                     break;
 
                 case EnumCmdCode.equipItem0:
-                    var equipItem0RequestPacket = new EquipItem0RequestPacket();
-                    equipItem0RequestPacket.idAccount = reader.ReadInt();
-                    equipItem0RequestPacket.id = reader.ReadInt();
-                    equipItem0RequestPacket.idItem0 = reader.ReadInt();
-                    equipItem0RequestPacket.slotName = reader.ReadString();
+                    int idAccountEquipItem0 = reader.ReadInt();
+                    int idEquipItem0 = reader.ReadInt();
+                    int idItem0EquipItem0 = reader.ReadInt();
+                    string slotNameEquipItem0 = reader.ReadString();
 
                     var equipItem0Controller = new ReadAttributesController();
-                    await equipItem0Controller.EquipItem0(client, equipItem0RequestPacket);
+                    await equipItem0Controller.EquipItem0(client, idAccountEquipItem0, idEquipItem0, idItem0EquipItem0, slotNameEquipItem0);
+                    break;
+
+                case EnumCmdCode.dropItem0:
+                    int idAccountDropItem0 = reader.ReadInt();
+                    int idDropItem0 = reader.ReadInt();
+                    int idItem0DropItem0 = reader.ReadInt();
+
+                    var dropItem0Controller = new DroppedItemManager();
+                    await dropItem0Controller.DropItem0(client, idAccountDropItem0, idDropItem0, idItem0DropItem0);
                     break;
 
                 case EnumCmdCode.playerAttackMob:
-                    var playerAttackDataPacket = new PlayerAttackDataPacket();
-                    playerAttackDataPacket.idAccount = reader.ReadInt();
-                    playerAttackDataPacket.aimedMobID = reader.ReadInt();
+                    int idAccount = reader.ReadInt();
+                    int aimedMobID = reader.ReadInt();
 
-                    var playerController = new PlayerController(playerAttackDataPacket.idAccount);
-                    await playerController.PlayerAttack(client, playerAttackDataPacket);
+                    var playerController = new PlayerController(idAccount);
+                    await playerController.PlayerAttack(client, aimedMobID);
                     break;
 
                 default:

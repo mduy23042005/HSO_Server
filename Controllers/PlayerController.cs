@@ -1,5 +1,6 @@
 ﻿public class PlayerController
 {
+    int idAccount;
     private MapController mapController = new MapController();
     private int maxHP;
     private int maxMP;
@@ -13,6 +14,8 @@
     public PlayerController() { }
     public PlayerController(int idAccount)
     {
+        this.idAccount = idAccount;
+
         maxHP = CacheManager.Instance.GetAccountData(idAccount).playerData.maxHP;
         maxMP = CacheManager.Instance.GetAccountData(idAccount).playerData.maxMP;
         hp = CacheManager.Instance.GetAccountData(idAccount).playerData.hp;
@@ -180,9 +183,9 @@
         }
     }
 
-    public async Task PlayerAttack(ClientConnection client, PlayerAttackDataPacket data)
+    public async Task PlayerAttack(ClientConnection client, int aimedMobID)
     {
-        var mob = CacheManager.Instance.GetMob(data.aimedMobID);
+        var mob = CacheManager.Instance.GetMob(aimedMobID);
 
         if (mob == null)
             return;
@@ -191,8 +194,8 @@
 
         PacketWriterManager writer1 = new PacketWriterManager();
         writer1.WriteInt((int)EnumCmdCode.playerAttackMob);
-        writer1.WriteInt(data.idAccount);
-        writer1.WriteInt(data.aimedMobID);
+        writer1.WriteInt(idAccount);
+        writer1.WriteInt(aimedMobID);
         writer1.WriteInt(damage);
         writer1.WriteInt(mob.hp);
 

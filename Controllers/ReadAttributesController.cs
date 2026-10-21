@@ -1,54 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-public class ReadAttributesEquipmentRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-    public int id;
-    public int idItem0_1;
-}
-public class ReadAttributesEquipmentResultPacket
-{
-    public EnumCmdCode cmd;
-    public EquipmentData attributesData;
-}
-
-public class ReadAttributesInventoryRequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-    public int id;
-    public int idItem0;
-}
-public class ReadAttributesInventoryResultPacket
-{
-    public EnumCmdCode cmd;
-    public InventoryItem0Data attributesItem0Data;
-    public InventoryItem1Data attributesItem1Data;
-    public InventoryItem2Data attributesItem2Data;
-    public InventoryItem3Data attributesItem3Data;
-    public InventoryItem4Data attributesItem4Data;
-}
-
-public class EquipItem0RequestPacket
-{
-    public EnumCmdCode cmd;
-    public int idAccount;
-    public int id;
-    public int idItem0;
-    public string slotName;
-}
-
 public class ReadAttributesController
 {
-    public async Task ReadAttributesEquipment(ClientConnection client, ReadAttributesEquipmentRequestPacket readAttributesPacket)
+    public async Task ReadAttributesEquipment(ClientConnection client, int idAccount, int id, int idItem0_1)
     {
-        int idAccount = readAttributesPacket.idAccount;
-
         try
         {
-            var equipmentData = CacheManager.Instance.GetAccountData(idAccount).equipments.Find(x => x.id == readAttributesPacket.id);
+            var equipmentData = CacheManager.Instance.GetAccountData(idAccount).equipments.Find(x => x.id == id);
 
             ReadAttributesEquipmentResultPacket equipmentAttributesResult = new ReadAttributesEquipmentResultPacket
             {
@@ -92,13 +51,11 @@ public class ReadAttributesController
     }
 
     //sau này sẽ có truyền thêm loại item (0, 1, 2, 3, 4) vào để phân biệt
-    public async Task ReadAttributesInventory(ClientConnection client, ReadAttributesInventoryRequestPacket readAttributesPacket) 
+    public async Task ReadAttributesInventory(ClientConnection client, int idAccount, int id, int idItem0) 
     {
-        int idAccount = readAttributesPacket.idAccount;
-
         try
         {
-            var inventoryItem0Data = CacheManager.Instance.GetAccountData(idAccount).inventoryItem0s.Find(x => x.id == readAttributesPacket.id);
+            var inventoryItem0Data = CacheManager.Instance.GetAccountData(idAccount).inventoryItem0s.Find(x => x.id == id);
 
             ReadAttributesInventoryResultPacket inventoryItem0AttributesResult = new ReadAttributesInventoryResultPacket();
 
@@ -151,10 +108,8 @@ public class ReadAttributesController
         }
     }
 
-    public async Task EquipItem0(ClientConnection client, EquipItem0RequestPacket equipItem0Packet)
+    public async Task EquipItem0(ClientConnection client, int idAccount, int id, int idItem0, string slotName)
     {
-        int idAccount = equipItem0Packet.idAccount;
-
         InventoryController inventoryController = new InventoryController();
         EquipmentController equipmentController = new EquipmentController();
 
@@ -163,8 +118,8 @@ public class ReadAttributesController
             var accountData = CacheManager.Instance.GetAccountData(idAccount);
             if (accountData == null) return;
 
-            var inventoryItem0Data = accountData.inventoryItem0s.Find(x => x.id == equipItem0Packet.id);
-            var equipmentData = accountData.equipments.Find(x => x.slotName == equipItem0Packet.slotName);
+            var inventoryItem0Data = accountData.inventoryItem0s.Find(x => x.id == id);
+            var equipmentData = accountData.equipments.Find(x => x.slotName == slotName);
 
             var tempEquipmentItem = new EquipmentData
             {
@@ -195,7 +150,7 @@ public class ReadAttributesController
             await equipmentController.ReadCacheEquipment(client);
             await inventoryController.ReadCacheInventory(client);
 
-            await WebAPIManager.Instance.PostAsync($"api/account/{idAccount}/equipItem0/{equipItem0Packet.id}?idAccount={idAccount}&id={equipItem0Packet.id}&slotName={equipItem0Packet.slotName}");
+            await WebAPIManager.Instance.PostAsync($"api/account/{idAccount}/equipItem0/{id}?idAccount={idAccount}&id={id}&slotName={slotName}");
         }
         catch (Exception ex)
         {

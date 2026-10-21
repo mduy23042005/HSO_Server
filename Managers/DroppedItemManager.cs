@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using System.Diagnostics;
 using System.Numerics;
 
 public class DroppedItemManager
@@ -58,15 +59,59 @@ public class DroppedItemManager
         // Lưu item vào map để vòng lặp định kỳ lấy ra đồng bộ
         lock (MapController.mapDroppedItem0s)
         {
-            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
-            {
+            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))         
                 droppedItem0sInCell.Add(droppedItem0);
-            }
         }
 
         PacketWriterManager writer = new PacketWriterManager();
         writer.WriteInt((int)EnumCmdCode.dropItem0);
-        writer.WriteInt(id); // Gửi ID mob để client biết item rơi từ vị trí của mob nào
+        writer.WriteInt(selectedIDItem0);
+        writer.WriteFloat(posX);
+        writer.WriteFloat(posY);
+        writer.WriteString(CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0);
+
+        await RaceManager.Instance.SendPacketToAllClientsInMap(map.map.Idmap, writer.ToArray());
+    }
+
+    public async Task DropItem0(ClientConnection client, int idAccount, int id, int selectedIDItem0)
+    {
+        var accountData = CacheManager.Instance.GetAccountData(idAccount);
+        float posX = accountData.playerTransformData.positionData.x;
+        float posY = accountData.playerTransformData.positionData.y;
+
+        var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
+
+        // Chuyển tọa độ world thành tọa độ cell của map
+        int x = (int)MathF.Round(posX - 0.5f - map.offsetX);
+        int y = (int)MathF.Round(posY - 0.5f - map.offsetY);
+
+        // Tạo dữ liệu item rơi
+        DroppedItem0Data droppedItem0 = new DroppedItem0Data
+        {
+            id = id,
+            idItem0 = selectedIDItem0,
+            posX = posX,
+            posY = posY,
+            nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0
+        };
+
+        var selectedItem0Data = accountData.inventoryItem0s.FirstOrDefault(item => item.idItem0 == selectedIDItem0);
+        accountData.inventoryItem0s.Remove(selectedItem0Data);
+
+        // Lưu item vào map để vòng lặp định kỳ lấy ra đồng bộ
+        lock (MapController.mapDroppedItem0s)
+        {
+            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))           
+                droppedItem0sInCell.Add(droppedItem0);
+        }
+
+        InventoryController inventoryController = new InventoryController();
+        await inventoryController.ReadCacheInventory(client);
+        EquipmentController equipmentController = new EquipmentController();
+        await equipmentController.ReadCacheEquipment(client);
+
+        PacketWriterManager writer = new PacketWriterManager();
+        writer.WriteInt((int)EnumCmdCode.dropItem0);
         writer.WriteInt(selectedIDItem0);
         writer.WriteFloat(posX);
         writer.WriteFloat(posY);

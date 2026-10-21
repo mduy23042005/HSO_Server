@@ -6,11 +6,11 @@ public class LogInController
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
     private DateTime time;
 
-    public async Task ClickLogIn(ClientConnection client, LogInRequestPacket loginPacket)
+    public async Task ClickLogIn(ClientConnection client, string username, string password)
     {
         LogInResultPacket loginResult;
 
-        string urlAccount = $"{WebAPIManager.Instance.GetApiUrl()}/api/account/login?username={loginPacket.username}&password={loginPacket.password}";
+        string urlAccount = $"{WebAPIManager.Instance.GetApiUrl()}/api/account/login?username={username}&password={password}";
         HttpResponseMessage res = await WebAPIManager.Instance.GetHttpClient().GetAsync(urlAccount);
         string json = await res.Content.ReadAsStringAsync();
         var acc = JsonConvert.DeserializeObject<Account>(json);
