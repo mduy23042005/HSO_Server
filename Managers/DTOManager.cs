@@ -323,12 +323,17 @@ public class LogInResultPacket
 
 public class DroppedItem0Data
 {
-    public int idMap;
-    public int id; // id xác định chính xác con quái trong map
-    public int idItem0;
+    public int id;
     public float posX;
     public float posY;
+    public int idItem0;
     public string nameItem0;
+    public string typeItem0;
+    public int category;
+    public int idSchool;
+    public int level;
+    public List<Item0Attribute> item0_Attributes;
+    public List<HSO_Server.Models.Attribute> nameAttributes;
 }
 
 public enum TileType

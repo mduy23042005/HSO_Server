@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Conventions;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics;
 
 public class DroppedItemManager
@@ -8,6 +7,8 @@ public class DroppedItemManager
     public static DroppedItemManager Instance => lazyInstance.Value;
 
     private Dictionary<ClientConnection, List<DroppedItem0Data>> droppedItem0sInViewAreaSnapshot = new Dictionary<ClientConnection, List<DroppedItem0Data>>();
+    private int nextDroppedItemId;
+    private readonly object droppedItemIdLock = new object();
 
     public void InitDroppedItem0s()
     {
@@ -27,7 +28,16 @@ public class DroppedItemManager
         }
     }
 
-    public async Task DropItem0Mob(int id, int idMob, MapData map, float posX, float posY)
+    private int GetNextDroppedItemId()
+    {
+        lock (droppedItemIdLock)
+        {
+            Instance.nextDroppedItemId = Instance.nextDroppedItemId + 1;
+            return Instance.nextDroppedItemId;
+        }
+    }
+
+    public async Task DropItem0Mob(int idMob, MapData map, float posX, float posY)
     {
         Random random = new Random();
         if (random.Next(2) == 0) // Trả về ngẫu nhiên 0 hoặc 1 (50% cơ hội trúng số 0)
@@ -49,31 +59,30 @@ public class DroppedItemManager
         // Tạo dữ liệu item rơi
         DroppedItem0Data droppedItem0 = new DroppedItem0Data
         {
-            id = id,
+            id = GetNextDroppedItemId(),
             idItem0 = selectedIDItem0,
             posX = posX,
             posY = posY,
-            nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0
+            nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0,
+            typeItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.TypeItem0,
+            category = 1, // các item0 vừa khởi tạo giả sử thuộc hạng 1
+            idSchool = (int)CacheManager.Instance.GetItem0(selectedIDItem0).item0.Idschool,
+            level = (int)CacheManager.Instance.GetItem0(selectedIDItem0).item0.Level,
+            item0_Attributes = CacheManager.Instance.GetItem0(selectedIDItem0).item0_Attributes,
+            nameAttributes = CacheManager.Instance.GetItem0(selectedIDItem0).nameAttributes,
         };
 
         // Lưu item vào map để vòng lặp định kỳ lấy ra đồng bộ
         lock (MapController.mapDroppedItem0s)
         {
-            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))         
+            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
+            {
                 droppedItem0sInCell.Add(droppedItem0);
+            }
         }
-
-        PacketWriterManager writer = new PacketWriterManager();
-        writer.WriteInt((int)EnumCmdCode.dropItem0);
-        writer.WriteInt(selectedIDItem0);
-        writer.WriteFloat(posX);
-        writer.WriteFloat(posY);
-        writer.WriteString(CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0);
-
-        await RaceManager.Instance.SendPacketToAllClientsInMap(map.map.Idmap, writer.ToArray());
     }
 
-    public async Task DropItem0(ClientConnection client, int idAccount, int id, int selectedIDItem0)
+    public async Task DropItem0(ClientConnection client, int idAccount, int idSlot, int selectedIDItem0)
     {
         var accountData = CacheManager.Instance.GetAccountData(idAccount);
         float posX = accountData.playerTransformData.positionData.x;
@@ -88,42 +97,37 @@ public class DroppedItemManager
         // Tạo dữ liệu item rơi
         DroppedItem0Data droppedItem0 = new DroppedItem0Data
         {
-            id = id,
-            idItem0 = selectedIDItem0,
+            id = GetNextDroppedItemId(),
             posX = posX,
             posY = posY,
-            nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0
+            idItem0 = selectedIDItem0,
+            nameItem0 = accountData.inventoryItem0s[idSlot].nameItem0,
+            typeItem0 = accountData.inventoryItem0s[idSlot].typeItem0,
+            category = accountData.inventoryItem0s[idSlot].category,
+            idSchool = accountData.inventoryItem0s[idSlot].idSchool,
+            level = accountData.inventoryItem0s[idSlot].level,
+            item0_Attributes = accountData.inventoryItem0s[idSlot].item0_Attributes,
+            nameAttributes = accountData.inventoryItem0s[idSlot].nameAttributes,
         };
 
-        var selectedItem0Data = accountData.inventoryItem0s.FirstOrDefault(item => item.idItem0 == selectedIDItem0);
-        accountData.inventoryItem0s.Remove(selectedItem0Data);
-
-        // Lưu item vào map để vòng lặp định kỳ lấy ra đồng bộ
-        lock (MapController.mapDroppedItem0s)
-        {
-            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))           
-                droppedItem0sInCell.Add(droppedItem0);
-        }
-
+        accountData.inventoryItem0s.RemoveAt(idSlot);
         InventoryController inventoryController = new InventoryController();
         await inventoryController.ReadCacheInventory(client);
-        EquipmentController equipmentController = new EquipmentController();
-        await equipmentController.ReadCacheEquipment(client);
 
-        PacketWriterManager writer = new PacketWriterManager();
-        writer.WriteInt((int)EnumCmdCode.dropItem0);
-        writer.WriteInt(selectedIDItem0);
-        writer.WriteFloat(posX);
-        writer.WriteFloat(posY);
-        writer.WriteString(CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0);
-
-        await RaceManager.Instance.SendPacketToAllClientsInMap(map.map.Idmap, writer.ToArray());
+        lock (MapController.mapDroppedItem0s)
+        {
+            if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
+            {
+                Console.WriteLine($"Save id: {droppedItem0.id}");
+                droppedItem0sInCell.Add(droppedItem0);
+            }
+        }
     }
 
     public async Task SyncDroppedItemsLoop(CancellationTokenSource shutdownCts)
     {
         const int targetTickRate = 1;
-        const int tickMS = 5000 / targetTickRate;
+        const int tickMS = 1500 / targetTickRate;
 
         var stopwatch = new Stopwatch();
 

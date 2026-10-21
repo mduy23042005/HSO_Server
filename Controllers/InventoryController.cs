@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-public class InventoryController
+﻿public class InventoryController
 {
     public async Task ReadCacheInventory(ClientConnection client)
     {
