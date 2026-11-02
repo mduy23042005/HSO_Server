@@ -37,7 +37,7 @@ public class DroppedItemManager
         }
     }
 
-    public async Task DropItem0Mob(int idMob, MapData map, float posX, float posY)
+    public void DropItem0Mob(int idMob, MapData map, float posX, float posY)
     {
         Random random = new Random();
         if (random.Next(2) == 0) // Trả về ngẫu nhiên 0 hoặc 1 (50% cơ hội trúng số 0)
@@ -64,10 +64,10 @@ public class DroppedItemManager
             posX = posX,
             posY = posY,
             nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0,
-            typeItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.TypeItem0,
+            typeItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.TypeItem0 ?? "",
             category = 1, // các item0 vừa khởi tạo giả sử thuộc hạng 1
-            idSchool = (int)CacheManager.Instance.GetItem0(selectedIDItem0).item0.Idschool,
-            level = (int)CacheManager.Instance.GetItem0(selectedIDItem0).item0.Level,
+            idSchool = CacheManager.Instance.GetItem0(selectedIDItem0).item0.Idschool ?? 0,
+            level = CacheManager.Instance.GetItem0(selectedIDItem0).item0.Level ?? 0,
             item0_Attributes = CacheManager.Instance.GetItem0(selectedIDItem0).item0_Attributes,
             nameAttributes = CacheManager.Instance.GetItem0(selectedIDItem0).nameAttributes,
         };
@@ -78,6 +78,7 @@ public class DroppedItemManager
             if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
             {
                 droppedItem0sInCell.Add(droppedItem0);
+                Console.WriteLine($"Dropped item {droppedItem0.id} | typeItem0 {droppedItem0.typeItem0} | idSchool {droppedItem0.idSchool} | level {droppedItem0.level}");
             }
         }
     }

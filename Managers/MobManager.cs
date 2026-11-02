@@ -44,9 +44,9 @@ public class MobManager
                             {
                                 mob.isRespawning = true;
 
+                                DroppedItemManager.Instance.DropItem0Mob(mob.mob.Idmob, map, mob.mobsAI.GetCurrentPosition().X, mob.mobsAI.GetCurrentPosition().Y);
                                 mob.mobsAI.Die();
-                                await DroppedItemManager.Instance.DropItem0Mob(mob.mob.Idmob, map, mob.mobsAI.GetCurrentPosition().X, mob.mobsAI.GetCurrentPosition().Y);
-
+        
                                 _ = Task.Run(async () =>
                                 {
                                     await Task.Delay(5000);
@@ -66,7 +66,7 @@ public class MobManager
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[Server] Update Mobs error: " + ex.Message);
+                Console.WriteLine("[Server] Update Mobs error: " + ex);
             }
 
             stopwatch.Stop();
