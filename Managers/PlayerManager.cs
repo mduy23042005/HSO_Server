@@ -28,11 +28,11 @@ public class PlayerManager
                         continue;
 
                     var accountData = CacheManager.Instance.GetAccountData(idAccount);
-                    if (accountData == null || accountData.playerTransformData == null || accountData.playerData == null)
+                    if (accountData == null || accountData.playerData == null || accountData.playerTransformData == null || accountData.playerTransformData.positionData == null)
                         continue;
 
                     var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
-                    if (map == null)
+                    if (map == null || map.map == null)
                         continue;
 
                     Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
@@ -89,7 +89,7 @@ public class PlayerManager
                                 continue;
 
                             writer.WriteInt(playerAccountData.playerData.idAccount);
-                            writer.WriteString(playerAccountData.playerData.nameChar);
+                            writer.WriteString(playerAccountData.playerData.nameChar ?? string.Empty);
                             writer.WriteInt(playerAccountData.playerData.level);
                             writer.WriteInt(playerAccountData.playerData.idSchool);
                             writer.WriteInt(playerAccountData.playerData.hair);
@@ -146,11 +146,11 @@ public class PlayerManager
                         continue;
 
                     var accountData = CacheManager.Instance.GetAccountData(idAccount);
-                    if (accountData == null || accountData.playerTransformData == null || accountData.playerData == null)
+                    if (accountData == null || accountData.playerData == null || accountData.playerTransformData == null || accountData.playerTransformData.positionData == null)
                         continue;
 
                     var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
-                    if (map == null)
+                    if (map == null || map.map == null)
                         continue;
 
                     Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
@@ -203,7 +203,9 @@ public class PlayerManager
 
                             var playerAccountData = CacheManager.Instance.GetAccountData(RaceManager.Instance.GetIDAccount(player));
 
-                            if (playerAccountData == null || playerAccountData.playerData == null)
+                            if (playerAccountData == null || playerAccountData.playerData == null || playerAccountData.playerTransformData == null 
+                                || playerAccountData.playerTransformData.positionData == null || playerAccountData.playerTransformData.scaleData == null
+                                || playerAccountData.playerStateData == null || playerAccountData.playerStateData.partBodyTransforms == null)
                                 continue;
 
                             writer.WriteInt(playerAccountData.playerData.idAccount);

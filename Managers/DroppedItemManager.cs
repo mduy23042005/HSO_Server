@@ -12,9 +12,9 @@ public class DroppedItemManager
 
     public void InitDroppedItem0s()
     {
-        foreach (var mob in CacheManager.Instance.GetAllMobs())
+        foreach (var mob in CacheManager.Instance.GetAllMobs() ?? Enumerable.Empty<KeyValuePair<int, MobData>>())
         {
-            if (mob.Value != null && CacheManager.Instance.GetDroppedItem0sMob(mob.Value.mob.Idmob) == null)
+            if (mob.Value != null && mob.Value.mob != null && CacheManager.Instance.GetDroppedItem0sMob(mob.Value.mob.Idmob) == null)
             {
                 int[] droppedItem0s = new int[128];
 
@@ -46,7 +46,7 @@ public class DroppedItemManager
             return;
         }
 
-        int[] droppedItem0s = CacheManager.Instance.GetDroppedItem0sMob(idMob);
+        int[]? droppedItem0s = CacheManager.Instance.GetDroppedItem0sMob(idMob);
         if (droppedItem0s == null || droppedItem0s.Length == 0)
             return;
 
@@ -63,18 +63,28 @@ public class DroppedItemManager
             idItem0 = selectedIDItem0,
             posX = posX,
             posY = posY,
-            nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.NameItem0,
-            typeItem0 = CacheManager.Instance.GetItem0(selectedIDItem0).item0.TypeItem0 ?? "",
+            nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0?.NameItem0,
+            typeItem0 = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0?.TypeItem0 ?? "",
             category = 1, // các item0 vừa khởi tạo giả sử thuộc hạng 1
-            idSchool = CacheManager.Instance.GetItem0(selectedIDItem0).item0.Idschool ?? 0,
-            level = CacheManager.Instance.GetItem0(selectedIDItem0).item0.Level ?? 0,
-            item0_Attributes = CacheManager.Instance.GetItem0(selectedIDItem0).item0_Attributes,
-            nameAttributes = CacheManager.Instance.GetItem0(selectedIDItem0).nameAttributes,
+            idSchool = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0?.Idschool ?? 0,
+            level = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0?.Level ?? 0,
+            item0_Attributes = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0_Attributes,
+            nameAttributes = CacheManager.Instance.GetItem0(selectedIDItem0)?.nameAttributes,
         };
 
         // Lưu item vào map để vòng lặp định kỳ lấy ra đồng bộ
         lock (MapController.mapDroppedItem0s)
         {
+            if (map == null)
+            {
+                Console.WriteLine($"[Server] DropItem0Mob: Map data not found for idMob: {idMob}");
+                return;
+            }
+            if (map.map == null)
+            {
+                Console.WriteLine($"[Server] DropItem0Mob: Map info not found for idMob: {idMob}");
+                return;
+            }
             if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
             {
                 droppedItem0sInCell.Add(droppedItem0);
@@ -86,14 +96,48 @@ public class DroppedItemManager
     public async Task DropItem0(ClientConnection client, int idAccount, int idSlot, int selectedIDItem0)
     {
         var accountData = CacheManager.Instance.GetAccountData(idAccount);
+
+        if (accountData == null)
+        {
+            Console.WriteLine($"[Server] DropItem0: Account data not found for idAccount: {idAccount}");
+            return;
+        }
+        if (accountData.playerData == null)
+        {
+            Console.WriteLine($"[Server] DropItem0: Player data not found for idAccount: {idAccount}");
+            return;
+        }
+        if (accountData.playerTransformData == null)
+        {
+            Console.WriteLine($"[Server] DropItem0: Player transform data not found for idAccount: {idAccount}");
+            return;
+        }
+        if (accountData.playerTransformData.positionData == null)
+        {
+            Console.WriteLine($"[Server] DropItem0: Player position data not found for idAccount: {idAccount}");
+            return;
+        }
+
         float posX = accountData.playerTransformData.positionData.x;
         float posY = accountData.playerTransformData.positionData.y;
 
         var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
 
+        if (map == null)
+        {
+            Console.WriteLine($"[Server] DropItem0: Map data not found for idAccount: {idAccount}");
+            return;
+        }
+
         // Chuyển tọa độ world thành tọa độ cell của map
         int x = (int)MathF.Round(posX - 0.5f - map.offsetX);
         int y = (int)MathF.Round(posY - 0.5f - map.offsetY);
+
+        if (accountData.inventoryItem0s == null || idSlot < 0 || idSlot >= accountData.inventoryItem0s.Count)
+        {
+            Console.WriteLine($"[Server] DropItem0: Inventory item not found for idAccount: {idAccount}, idSlot: {idSlot}");
+            return;
+        }
 
         // Tạo dữ liệu item rơi
         DroppedItem0Data droppedItem0 = new DroppedItem0Data
@@ -117,6 +161,17 @@ public class DroppedItemManager
 
         lock (MapController.mapDroppedItem0s)
         {
+            if (map == null)
+            {
+                Console.WriteLine($"[Server] DropItem0: Map data not found for idAccount: {idAccount}");
+                return;
+            }
+            if (map.map == null)
+            {
+                Console.WriteLine($"[Server] DropItem0: Map info not found for idAccount: {idAccount}");
+                return;
+            }
+
             if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
             {
                 Console.WriteLine($"Save id: {droppedItem0.id}");
@@ -153,7 +208,11 @@ public class DroppedItemManager
                     if (map == null || map.mobsData == null)
                         continue;
 
-                    Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
+                    var positionData = accountData.playerTransformData.positionData;
+                    if (positionData == null)
+                        continue;
+
+                    Vector2 playerPosition = new Vector2((int)MathF.Round(positionData.x - 0.5f - map.offsetX), (int)MathF.Round(positionData.y - 0.5f - map.offsetY));
 
                     int minX = (int)playerPosition.X - 15;
                     int maxX = (int)playerPosition.X + 15;
@@ -171,14 +230,14 @@ public class DroppedItemManager
 
                     lock (MapController.mapDroppedItem0s)
                     {
-                        if (!MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells))
+                        if (!MapController.mapDroppedItem0s.TryGetValue(map?.map?.Idmap ?? 0, out var mapCells))
                             continue;
 
                         for (int y = minY; y <= maxY; y++)
                         {
                             for (int x = minX; x <= maxX; x++)
                             {
-                                if (!MapController.mapDroppedItem0s[map.map.Idmap].TryGetValue((x, y), out var droppedItem0sInCell))
+                                if (!MapController.mapDroppedItem0s[map?.map?.Idmap ?? 0].TryGetValue((x, y), out var droppedItem0sInCell))
                                     continue;
 
                                 foreach (var droppedItem0 in droppedItem0sInCell)
@@ -199,7 +258,7 @@ public class DroppedItemManager
                         writer.WriteInt(droppedItem0.idItem0);
                         writer.WriteFloat(droppedItem0.posX);
                         writer.WriteFloat(droppedItem0.posY);
-                        writer.WriteString(droppedItem0.nameItem0);
+                        writer.WriteString(droppedItem0.nameItem0 ?? string.Empty);
                     }
 
                     byte[] packet = writer.ToArray();

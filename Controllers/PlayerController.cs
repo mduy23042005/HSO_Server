@@ -16,10 +16,14 @@
     {
         this.idAccount = idAccount;
 
-        maxHP = CacheManager.Instance.GetAccountData(idAccount).playerData.maxHP;
-        maxMP = CacheManager.Instance.GetAccountData(idAccount).playerData.maxMP;
-        hp = CacheManager.Instance.GetAccountData(idAccount).playerData.hp;
-        mp = CacheManager.Instance.GetAccountData(idAccount).playerData.mp;
+        var accountData = CacheManager.Instance.GetAccountData(idAccount);
+        if (accountData == null || accountData.playerData == null)
+            return;
+
+        maxHP = accountData.playerData.maxHP;
+        maxMP = accountData.playerData.maxMP;
+        hp = accountData.playerData.hp;
+        mp = accountData.playerData.mp;
 
         damage = 125;
     }
@@ -57,7 +61,7 @@
         int idAccount = reader.ReadInt();
 
         var accountData = CacheManager.Instance.GetAccountData(idAccount);
-        if (accountData != null)
+        if (accountData != null && accountData.playerData != null)
         {
             TileType currentTile = (TileType)reader.ReadInt();
             accountData.playerData.currentTile = currentTile;
@@ -109,59 +113,77 @@
 
     private async Task CheckPosition(ClientConnection client, AccountData accountData, PlayerTransformData newTransformData)
     {
+        if (accountData == null || accountData.account == null || accountData.playerData == null || accountData.playerTransformData == null || accountData.playerTransformData.positionData == null || accountData.playerTransformData.scaleData == null)
+            return;
+
+        if (newTransformData == null || newTransformData.positionData == null)
+            return;
+
         var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
+        if (map == null)
+            return;
+
         if (!mapController.IsWalkable(map, newTransformData.positionData.x, newTransformData.positionData.y))
         {
-            if (accountData != null && accountData.playerTransformData != null)
-            {
-                PacketWriterManager writer = new PacketWriterManager();
-                writer.WriteInt((int)EnumCmdCode.syncCallBack);
+            PacketWriterManager writer = new PacketWriterManager();
+            writer.WriteInt((int)EnumCmdCode.syncCallBack);
 
-                writer.WriteFloat(accountData.playerTransformData.positionData.x);
-                writer.WriteFloat(accountData.playerTransformData.positionData.y);
+            writer.WriteFloat(accountData.playerTransformData.positionData.x);
+            writer.WriteFloat(accountData.playerTransformData.positionData.y);
 
-                byte[] packet = writer.ToArray();
-                _ = RaceManager.Instance.SendPacketToClient(client, packet);
-            }
+            byte[] packet = writer.ToArray();
+            await RaceManager.Instance.SendPacketToClient(client, packet);
         }
         else
         {
             if (mapController.IsTransitionMap(map, newTransformData.positionData.x, newTransformData.positionData.y))
             {
-                if (accountData != null && accountData.playerTransformData != null)
+                PacketWriterManager writer = new PacketWriterManager();
+                writer.WriteInt((int)EnumCmdCode.changeMap);
+                int oldMapId = accountData.playerData.idMap;
+                (int, int) oldCell = ((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
+
+                int newIDMap = 0;
+                switch (accountData.playerData.idMap)
                 {
-                    var playerData = CacheManager.Instance.GetAccountData(accountData.playerData.idAccount);
+                    case 1:
+                        //từ ngôi làng nhỏ qua rừng ảo giác sẽ theo tọa độ này
+                        newIDMap = 6;
+                        accountData.playerTransformData.positionData.x = -8;
+                        accountData.playerTransformData.positionData.y = -54;
+                        break;
 
-                    PacketWriterManager writer = new PacketWriterManager();
-                    writer.WriteInt((int)EnumCmdCode.changeMap);
-                    int newIDMap = 0;
-
-                    switch (accountData.playerData.idMap)
-                    {
-                        case 1:
-                            //từ ngôi làng nhỏ qua rừng ảo giác sẽ theo tọa độ này
-                            newIDMap = 6;
-                            playerData.playerTransformData.positionData.x = -8;
-                            playerData.playerTransformData.positionData.y = -54;
-                            break;
-
-                        case 6:
-                            newIDMap = 1;
-                            playerData.playerTransformData.positionData.x = 24;
-                            playerData.playerTransformData.positionData.y = 22;
-                            break;
-                    }
-
-                    playerData.playerData.idMap = newIDMap;
-                    writer.WriteInt(newIDMap);
-                    writer.WriteFloat(playerData.playerTransformData.positionData.x);
-                    writer.WriteFloat(playerData.playerTransformData.positionData.y);
-
-                    writer.WriteFloat(accountData.playerTransformData.scaleData.x);
-
-                    byte[] packet = writer.ToArray();
-                    _ = RaceManager.Instance.SendPacketToClient(client, packet);
+                    case 6:
+                        newIDMap = 1;
+                        accountData.playerTransformData.positionData.x = 24;
+                        accountData.playerTransformData.positionData.y = 22;
+                        break;
                 }
+
+                var newMap = CacheManager.Instance.GetMap(newIDMap);
+                if (newMap == null)
+                    return;
+
+                (int, int) newCell = ((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - newMap.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - newMap.offsetY));
+
+                lock (MapController.mapPlayers)
+                {
+                    if (MapController.mapPlayers.TryGetValue(oldMapId, out var oldCells) && oldCells.TryGetValue(oldCell, out var oldList))
+                        oldList.Remove(client);
+
+                    if (MapController.mapPlayers.TryGetValue(newIDMap, out var newCells) && newCells.TryGetValue(newCell, out var newList))
+                        newList.Add(client);
+                }
+
+                accountData.playerData.idMap = newIDMap;
+                writer.WriteInt(newIDMap);
+                writer.WriteFloat(accountData.playerTransformData.positionData.x);
+                writer.WriteFloat(accountData.playerTransformData.positionData.y);
+
+                writer.WriteFloat(accountData.playerTransformData.scaleData.x);
+
+                byte[] packet = writer.ToArray();
+                await RaceManager.Instance.SendPacketToClient(client, packet);
             }
             else
             {
@@ -175,8 +197,12 @@
                 {
                     lock (MapController.mapPlayers)
                     {
-                        MapController.mapPlayers[accountData.playerData.idMap][oldCell].Remove(RaceManager.Instance.GetClientByAccountId(accountData.account.Idaccount));
-                        MapController.mapPlayers[accountData.playerData.idMap][newCell].Add(RaceManager.Instance.GetClientByAccountId(accountData.account.Idaccount));
+                        var clientConnection = RaceManager.Instance.GetClientByAccountId(accountData.account.Idaccount);
+                        if (clientConnection == null)
+                            return;
+
+                        MapController.mapPlayers[accountData.playerData.idMap][oldCell].Remove(clientConnection);
+                        MapController.mapPlayers[accountData.playerData.idMap][newCell].Add(clientConnection);
                     }
                 }
             }

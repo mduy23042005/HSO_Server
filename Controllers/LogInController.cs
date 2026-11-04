@@ -27,7 +27,7 @@ public class LogInController
                     success = false,
                     idAccount = 0,
                     idSchool = 0,
-                    nameChar = null,
+                    nameChar = null ?? string.Empty,
                     hair = 0,
                     level = 0,
                     maxHP = 0,
@@ -42,7 +42,7 @@ public class LogInController
                 writer.WriteBool(loginResult.success);
                 writer.WriteInt(loginResult.idAccount);
                 writer.WriteInt(loginResult.idSchool);
-                writer.WriteString(loginResult.nameChar);
+                writer.WriteString(loginResult.nameChar ?? string.Empty);
                 writer.WriteInt(loginResult.hair);
                 writer.WriteInt(loginResult.level);
                 writer.WriteInt(loginResult.maxHP);
@@ -57,24 +57,33 @@ public class LogInController
             }
             else
             {
+                int idAccount = acc.Idaccount;
+                int idSchool = acc.Idschool ?? 0;
+                string nameChar = acc.NameChar ?? string.Empty;
+                int hair = acc.Hair ?? 0;
+                int level = acc.Level ?? 1;
+
                 loginResult = new LogInResultPacket
                 {
                     cmd = EnumCmdCode.login,
                     success = acc != null,
-                    idAccount = acc.Idaccount,
-                    idSchool = acc.Idschool ?? 0,
-                    nameChar = acc.NameChar,
-                    hair = acc.Hair ?? 0,
-                    level = acc.Level ?? 1,
-                    message = $"Đăng nhập {acc.NameChar} thành công."
+                    idAccount = idAccount,
+                    idSchool = idSchool,
+                    nameChar = nameChar,
+                    hair = hair,
+                    level = level,
+                    message = $"Đăng nhập {nameChar} thành công."
                 };
+
+                if (acc == null)
+                    return;
 
                 await LoadAccountData(acc);
 
-                loginResult.maxHP = CacheManager.Instance.GetAccountData(acc.Idaccount).playerData.maxHP;
-                loginResult.maxMP = CacheManager.Instance.GetAccountData(acc.Idaccount).playerData.maxMP;
-                loginResult.hp = CacheManager.Instance.GetAccountData(acc.Idaccount).playerData.hp;
-                loginResult.mp = CacheManager.Instance.GetAccountData(acc.Idaccount).playerData.mp;
+                loginResult.maxHP = CacheManager.Instance.GetAccountData(idAccount)?.playerData?.maxHP ?? 0;
+                loginResult.maxMP = CacheManager.Instance.GetAccountData(idAccount)?.playerData?.maxMP ?? 0;
+                loginResult.hp = CacheManager.Instance.GetAccountData(idAccount)?.playerData?.hp ?? 0;
+                loginResult.mp = CacheManager.Instance.GetAccountData(idAccount)?.playerData?.mp ?? 0;
 
                 time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
                 Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Welcome back {loginResult.nameChar}.");
@@ -89,7 +98,7 @@ public class LogInController
                 success = false,
                 idAccount = 0,
                 idSchool = 0,
-                nameChar = null,
+                nameChar = null ?? string.Empty,
                 hair = 0,
                 level = 0,
                 maxHP = 0,
@@ -105,7 +114,7 @@ public class LogInController
         writer.WriteBool(loginResult.success);
         writer.WriteInt(loginResult.idAccount);
         writer.WriteInt(loginResult.idSchool);
-        writer.WriteString(loginResult.nameChar);
+        writer.WriteString(loginResult.nameChar ?? string.Empty);
         writer.WriteInt(loginResult.hair);
         writer.WriteInt(loginResult.level);
         writer.WriteInt(loginResult.maxHP);
@@ -161,34 +170,35 @@ public class LogInController
 
         AccountData accountData = new AccountData();
         accountData.account = acc;
-        accountData.equipments = equipmentData;
+
+        if (equipmentData != null)
+            accountData.equipments = equipmentData;
+
         if (inventoryItem0Data != null)
-        {
             accountData.inventoryItem0s = inventoryItem0Data;
-        }
+        
         if (inventoryItem2Data != null)
-        {
             accountData.inventoryItem2s = inventoryItem2Data;
-        }
+
         if (inventoryItem3Data != null)
-        {
             accountData.inventoryItem3s = inventoryItem3Data;
-        }
+        
         if (inventoryItem4Data != null)
-        {
             accountData.inventoryItem4s = inventoryItem4Data;
-        }
 
         accountData.playerData = new PlayerData();
         accountData.playerData.idAccount = acc.Idaccount;
         accountData.playerData.level = acc.Level ?? 1;
         accountData.playerData.idSchool = acc.Idschool ?? 0;
-        accountData.playerData.nameChar = acc.NameChar;
+        accountData.playerData.nameChar = acc.NameChar ?? string.Empty;
         accountData.playerData.hair = acc.Hair ?? 0;
-        accountData.playerData.weapon = accountData.equipments[0].idItem0_1;
-        accountData.playerData.helmet = accountData.equipments[1].idItem0_1;
-        accountData.playerData.armor = accountData.equipments[2].idItem0_1;
-        accountData.playerData.legArmor = accountData.equipments[3].idItem0_1;
+        if (accountData.equipments != null)
+        {
+            accountData.playerData.weapon = accountData.equipments[0].idItem0_1;
+            accountData.playerData.helmet = accountData.equipments[1].idItem0_1;
+            accountData.playerData.armor = accountData.equipments[2].idItem0_1;
+            accountData.playerData.legArmor = accountData.equipments[3].idItem0_1;
+        }
         accountData.playerData.idMap = 1;
 
         var playerController = new PlayerController(accountData.account.Idaccount, acc.Point0 ?? 5, acc.Point1 ?? 5, acc.Point2 ?? 5, acc.Point3 ?? 5);

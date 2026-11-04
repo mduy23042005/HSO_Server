@@ -25,7 +25,7 @@ public class MobController
     private (int x, int y) startPosition;
     private (int x, int y) endMovementPosition;
     private (int x, int y) endAttackPosition;
-    private List<(int x, int y)> path;
+    private List<(int x, int y)>? path;
     private int pathIndex;
     private AStarManager astar = new AStarManager();
     private MapController mapController = new MapController();
@@ -53,6 +53,13 @@ public class MobController
     }
     public void Move(float deltaTime, MapData map, int id)
     {
+        if (map == null || map.map == null)
+            return;
+
+        var mob = CacheManager.Instance.GetMob(id);
+        if (mob == null)
+            return;
+
         (int, int) oldCell = ((int)currentPosition.X - map.offsetX, (int)currentPosition.Y - map.offsetY);
 
         if (isAttacking)
@@ -135,8 +142,8 @@ public class MobController
         {
             lock (MapController.mapMobs)
             {
-                MapController.mapMobs[map.map.Idmap][oldCell].Remove(CacheManager.Instance.GetMob(id));
-                MapController.mapMobs[map.map.Idmap][newCell].Add(CacheManager.Instance.GetMob(id));
+                MapController.mapMobs[map.map.Idmap][oldCell].Remove(mob);
+                MapController.mapMobs[map.map.Idmap][newCell].Add(mob);
             }
         }
     }
@@ -145,28 +152,33 @@ public class MobController
         return ((int)Math.Floor(pos.X), (int)Math.Floor(pos.Y));
     }
 
-    private int FindNearestPlayerInVision()
+    private int FindNearestPlayerInVision(MapData map)
     {
         float minDistance = float.MaxValue; //gán 1 số cực lớn để đánh dấu chưa có player nào gần nhất
         int nearestPlayer = -1;
 
-        foreach (var kv in CacheManager.Instance.GetAllAccountData())
+        foreach (var account in CacheManager.Instance.GetAllAccountData() ?? Enumerable.Empty<KeyValuePair<int, AccountData>>())
         {
-            var playerData = kv.Value.playerTransformData;
-            var hpAimedPlayer = kv.Value.playerData.hp;
-            if (playerData == null) 
+            if (account.Value == null || account.Value.playerData == null || account.Value.playerTransformData == null || account.Value.playerTransformData.positionData == null)
                 continue;
 
+            if (map == null || map.map == null)
+                continue;
+
+            if (account.Value.playerData.idMap != map.map.Idmap)
+                continue;
+
+            var hpAimedPlayer = account.Value.playerData.hp;
             if (hpAimedPlayer <= 0)
                 continue;
 
-            Vector2 playerPosition = new Vector2(playerData.positionData.x, playerData.positionData.y);
+            Vector2 playerPosition = new Vector2(account.Value.playerTransformData.positionData.x, account.Value.playerTransformData.positionData.y);
             float distance = Vector2.Distance(currentPosition, playerPosition);
 
             if (distance <= visionRadius && distance < minDistance)
             {
                 minDistance = distance; // cập nhật player gần nhất
-                nearestPlayer = kv.Key;
+                nearestPlayer = account.Key;
             }
         }
 
@@ -184,7 +196,7 @@ public class MobController
         // Nếu chưa có target player thì tìm target player
         if (targetPlayerId == -1)
         {
-            targetPlayerId = FindNearestPlayerInVision();
+            targetPlayerId = FindNearestPlayerInVision(map);
             if (targetPlayerId == -1)
             {
                 // không attack nữa thì reset
@@ -195,7 +207,7 @@ public class MobController
         }
 
         var account = CacheManager.Instance.GetAccountData(targetPlayerId);
-        if (account == null || account.playerStateData == null || account.playerData.hp <= 0)
+        if (account == null || account.playerData == null || account.playerData.hp <= 0 || account.playerTransformData == null || account.playerTransformData.positionData == null || account.playerStateData == null)
         {
             targetPlayerId = -1;
             isAttacking = false;
@@ -320,19 +332,22 @@ public class MobController
             startPosition = endMovementPosition;
 
             var player = CacheManager.Instance.GetAccountData(targetPlayerId);
-            if (player == null)
+            if (player == null || player.playerData == null)
                 return;
             
             player.playerData.hp = player.playerData.hp - mobDamage;
             var client = RaceManager.Instance.GetClientByAccountId(targetPlayerId);
 
-            PacketWriterManager writer = new PacketWriterManager();
-            writer.WriteInt((int)EnumCmdCode.mobsAttackPlayer);
-            writer.WriteInt(idMob);
-            writer.WriteInt(player.playerData.idAccount);
-            writer.WriteInt(mobDamage);
-            writer.WriteInt(player.playerData.hp);
-            RaceManager.Instance.SendPacketToClient(client, writer.ToArray());
+            if (client != null)
+            {
+                PacketWriterManager writer = new PacketWriterManager();
+                writer.WriteInt((int)EnumCmdCode.mobsAttackPlayer);
+                writer.WriteInt(idMob);
+                writer.WriteInt(player.playerData.idAccount);
+                writer.WriteInt(mobDamage);
+                writer.WriteInt(player.playerData.hp);
+                _ = RaceManager.Instance.SendPacketToClient(client, writer.ToArray());
+            }
 
             PacketWriterManager writer1 = new PacketWriterManager();
             writer1.WriteInt((int)EnumCmdCode.mobsAttackOtherPlayer);
@@ -340,7 +355,7 @@ public class MobController
             writer1.WriteInt(player.playerData.idAccount);
             writer1.WriteInt(mobDamage);
             writer1.WriteInt(player.playerData.hp);
-            RaceManager.Instance.SendPacketToAllClients(writer1.ToArray());
+            _ = RaceManager.Instance.SendPacketToAllClients(writer1.ToArray());
         }
     }
     private float Clamp(float value, float min, float max)

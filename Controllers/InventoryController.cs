@@ -6,10 +6,16 @@
 
         try
         {
-            var inventoryItem0Data = CacheManager.Instance.GetAccountData(idAccount).inventoryItem0s;
+            var inventoryItem0Data = CacheManager.Instance.GetAccountData(idAccount)?.inventoryItem0s;
+
+            if (inventoryItem0Data == null)
+            {
+                Console.WriteLine($"[Server] ReadCacheInventory: InventoryItem0 data not found for idAccount: {idAccount}");
+                return;
+            }
 
             InventoryResultPacket inventoryResult = new InventoryResultPacket
-            { 
+            {
                 cmd = EnumCmdCode.inventory,
                 inventoryItem0Data = new List<InventoryItem0Data>(),
                 inventoryItem1Data = new List<InventoryItem1Data>(),
@@ -18,8 +24,12 @@
             };
 
             // tạm thời chỉ có item0
-            foreach (var inventoryItem0 in inventoryItem0Data) 
+            // (THÊM) Lượt 1: lấy các ô có item trước, giữ nguyên thứ tự cũ => dồn lên đầu
+            foreach (var inventoryItem0 in inventoryItem0Data)
             {
+                if (inventoryItem0.idItem0 == 0)
+                    continue;
+
                 inventoryResult.inventoryItem0Data.Add(new InventoryItem0Data
                 {
                     id = inventoryItem0.id,
@@ -34,12 +44,14 @@
             PacketWriterManager writer = new PacketWriterManager();
             writer.WriteInt((int)inventoryResult.cmd);
             writer.WriteListCount(inventoryResult.inventoryItem0Data.Count);
-            foreach (var inventoryItem0 in inventoryItem0Data)
+            // (SỬA) Trước đây lặp trên inventoryItem0Data (cache), nên danh sách đã dồn bị bỏ qua.
+            // Giờ lặp trên inventoryResult.inventoryItem0Data để gửi đúng thứ tự đã dồn.
+            foreach (var inventoryItem0 in inventoryResult.inventoryItem0Data)
             {
                 writer.WriteInt(inventoryItem0.id);
                 writer.WriteInt(inventoryItem0.idItem0);
-                writer.WriteString(inventoryItem0.nameItem0);
-                writer.WriteString(inventoryItem0.typeItem0);
+                writer.WriteString(inventoryItem0.nameItem0 ?? string.Empty);
+                writer.WriteString(inventoryItem0.typeItem0 ?? string.Empty);
                 writer.WriteInt(inventoryItem0.category);
                 writer.WriteInt(inventoryItem0.idSchool);
             }

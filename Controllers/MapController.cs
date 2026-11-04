@@ -12,6 +12,9 @@ public class MapController
 
     public void InitMap(MapData mapData)
     {
+        if (mapData == null || mapData.map == null)
+            return;
+
         string? path = AppContext.BaseDirectory;
 
         while (path != null)
@@ -70,11 +73,9 @@ public class MapController
 
     public bool IsWalkable(MapData mapData, float worldX, float worldY)
     {
-        if (mapData == null)
-        {
+        if (mapData == null || mapData.map == null || mapData.tiles == null)
             return false;
-        }
-
+        
         int x = (int)Math.Floor(worldX) - mapData.offsetX;
         int y = (int)Math.Floor(worldY) - mapData.offsetY;
 
@@ -86,10 +87,8 @@ public class MapController
 
     public bool IsTransitionMap(MapData mapData, float worldX, float worldY)
     {
-        if (mapData == null)
-        {
+        if (mapData == null || mapData.map == null || mapData.tiles == null)
             return false;
-        }
 
         int x = (int)Math.Floor(worldX) - mapData.offsetX;
         int y = (int)Math.Floor(worldY) - mapData.offsetY;
@@ -102,10 +101,9 @@ public class MapController
 
     public TileType GetTileType(MapData mapData, float worldX, float worldY)
     {
-        if (mapData == null)
-        {
+        if (mapData == null || mapData.map == null || mapData.tiles == null)
             return TileType.None;
-        }
+        
         int x = (int)Math.Floor(worldX) - mapData.offsetX;
         int y = (int)Math.Floor(worldY) - mapData.offsetY;
 

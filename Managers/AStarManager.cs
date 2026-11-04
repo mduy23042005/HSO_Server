@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class NodeAStar
+public class NodeAStar(int x, int y)
 {
-    public int x;
-    public int y;
+    public int x = x;
+    public int y = y;
     public float gCost;
     public float hCost;
     public float fCost => gCost + hCost;
-    public NodeAStar parent;
-
-    public NodeAStar(int x, int y)
-    {
-        this.x = x;
-        this.y = y;
-    }
+    public NodeAStar? parent;
 }
 
 public class AStarManager
@@ -40,7 +34,7 @@ public class AStarManager
         (-1, -1, 1.4142f)
     };
 
-    public List<(int x, int y)> FindPath(MapData mapData, int startX, int startY, int endX, int endY)
+    public List<(int x, int y)>? FindPath(MapData mapData, int startX, int startY, int endX, int endY)
     {
         var openSet = new List<NodeAStar>();
         var closedSet = new HashSet<(int, int)>();
@@ -92,7 +86,7 @@ public class AStarManager
 
                 float newG = current.gCost + dir.cost;
 
-                if (!nodes.TryGetValue((nx, ny), out NodeAStar neighbor))
+                if (!nodes.TryGetValue((nx, ny), out var neighbor))
                 {
                     neighbor = new NodeAStar(nx, ny);
                     nodes[(nx, ny)] = neighbor;
@@ -112,7 +106,7 @@ public class AStarManager
 
         return null; // không tìm được đường
     }
-    public List<(int x, int y)> FindPath(MapData mapData, MoveArea moveArea, int startX, int startY, int endX, int endY)
+    public List<(int x, int y)>? FindPath(MapData mapData, MoveArea moveArea, int startX, int startY, int endX, int endY)
     {
         var openSet = new List<NodeAStar>();
         var closedSet = new HashSet<(int, int)>();
@@ -168,7 +162,7 @@ public class AStarManager
 
                 float newG = current.gCost + dir.cost;
 
-                if (!nodes.TryGetValue((nx, ny), out NodeAStar neighbor))
+                if (!nodes.TryGetValue((nx, ny), out var neighbor))
                 {
                     neighbor = new NodeAStar(nx, ny);
                     nodes[(nx, ny)] = neighbor;
@@ -196,6 +190,7 @@ public class AStarManager
         while (current != null)
         {
             path.Add((current.x, current.y));
+
             current = current.parent;
         }
 

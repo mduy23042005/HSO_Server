@@ -80,7 +80,7 @@ public sealed class RaceManager
             return clientAccountMapping.TryGetValue(client, out var idAccount) ? idAccount : 0;
         }
     }
-    public ClientConnection GetClientByAccountId(int idAccount)
+    public ClientConnection? GetClientByAccountId(int idAccount)
     {
         lock (clientCollectionLock)
         {
@@ -101,7 +101,7 @@ public sealed class RaceManager
         }
     }
 
-    public async Task SendPacketToAllClients(byte[] data, ClientConnection excludedClient = null)
+    public async Task SendPacketToAllClients(byte[] data, ClientConnection? excludedClient = null)
     {
         if (data == null)
             return;
@@ -115,37 +115,6 @@ public sealed class RaceManager
                 continue;
 
             if (client.socket == null || client.socket.State != WebSocketState.Open)
-                continue;
-
-            tasks.Add(SendPacketToClient(client, data));
-        }
-
-        await Task.WhenAll(tasks);
-    }
-    public async Task SendPacketToAllClientsInMap(int mapID, byte[] data, ClientConnection excludedClient = null)
-    {
-        if (data == null)
-            return;
-
-        List<ClientConnection> snapshot = CreateClientSnapshot();
-        List<Task> tasks = new List<Task>();
-
-        foreach (ClientConnection client in snapshot)
-        {
-            if (client == excludedClient)
-                continue;
-
-            if (client.socket == null || client.socket.State != WebSocketState.Open)
-                continue;
-
-            var map = CacheManager.Instance.GetMap(mapID);
-            if (map == null || map.mobsData == null)
-                continue;
-
-            var idAccount = GetIDAccount(client);
-            var accountData = CacheManager.Instance.GetAccountData(idAccount);
-
-            if (accountData.playerData.idMap != mapID)
                 continue;
 
             tasks.Add(SendPacketToClient(client, data));
@@ -193,11 +162,6 @@ public sealed class RaceManager
         }
         catch (ObjectDisposedException)
         {
-            MarkLogOut(targetClient);
-        }
-        catch (WebSocketException ex)
-        {
-            Console.WriteLine("[SEND WS ERROR] " + ex.Message);
             MarkLogOut(targetClient);
         }
         catch (Exception ex)
@@ -305,7 +269,7 @@ public sealed class RaceManager
         foreach (var client in needCleanup)
         {
             int idAccount = GetIDAccount(client);
-            string nameAccount = CacheManager.Instance.GetAllAccountData().TryGetValue(idAccount, out var value) ? value.account.NameChar : null;
+            string nameAccount = CacheManager.Instance.GetAccountData(idAccount)?.account?.NameChar ?? string.Empty;
 
             if (idAccount != 0)
             {

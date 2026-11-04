@@ -32,7 +32,7 @@ public class WebAPIManager
         }
     }
 
-    public async Task<string> PostAsync(string endpoint)
+    public async Task<string?> PostAsync(string endpoint)
     {
         try
         {
@@ -43,13 +43,13 @@ public class WebAPIManager
             string result = await response.Content.ReadAsStringAsync();
             return result;
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine("POST API lỗi: " + ex.Message);
             return null;
         }
     }
-    public async Task<string> PostAsync(string endpoint, HttpContent content)
+    public async Task<string?> PostAsync(string endpoint, HttpContent content)
     {
         try
         {
@@ -62,7 +62,7 @@ public class WebAPIManager
             string result = await response.Content.ReadAsStringAsync();
             return result;
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine("POST API lỗi: " + ex.Message);
             return null;

@@ -23,7 +23,7 @@ public sealed class ClientConnection
 
 public class WebSocketServerManager
 {
-    private HttpListener listener;
+    private HttpListener listener = new HttpListener();
     private CancellationTokenSource shutdownCts = new CancellationTokenSource();
     private volatile bool isShuttingDown = false;
     private TimeZoneInfo vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
@@ -115,7 +115,6 @@ public class WebSocketServerManager
 
     private void ListenToPort(int port)
     {
-        listener = new HttpListener();
         listener.Prefixes.Add($"http://+:{port}/");
         listener.Start();
     }
@@ -157,14 +156,17 @@ public class WebSocketServerManager
         {
             foreach (var map in mapList)
             {
-                foreach (var npcData in map.npcsData)
+                if (map.npcsData != null)
                 {
-                    CacheManager.Instance.AddNPC(new NPCData
+                    foreach (var npcData in map.npcsData)
                     {
-                        npc = npcData.npc,
-                        posX = npcData.posX,
-                        posY = npcData.posY,
-                    });
+                        CacheManager.Instance.AddNPC(new NPCData
+                        {
+                            npc = npcData.npc,
+                            posX = npcData.posX,
+                            posY = npcData.posY,
+                        });
+                    }
                 }
             }
         }
@@ -177,15 +179,18 @@ public class WebSocketServerManager
         {
             foreach (var map in mapList)
             {
-                foreach (var mobData in map.mobsData)
+                if (map.mobsData != null)
                 {
-                    mobData.mobsAI = new MobController(mobData.posX, mobData.posY, 6, 6);
-                    int level = mobData.mob.Level ?? 1;
-                    mobData.damage = level * 10;
-                    mobData.hp = mobData.mob.Hp ?? 0;
+                    foreach (var mobData in map.mobsData)
+                    {
+                        mobData.mobsAI = new MobController(mobData.posX, mobData.posY, 6, 6);
+                        int level = mobData.mob?.Level ?? 1;
+                        mobData.damage = level * 10;
+                        mobData.hp = mobData.mob?.Hp ?? 0;
 
-                    CacheManager.Instance.AddMob(mobData);
-                    MapController.mapMobs[map.map.Idmap][(mobData.posX - map.offsetX, mobData.posY - map.offsetY)].Add(mobData);
+                        CacheManager.Instance.AddMob(mobData);
+                        MapController.mapMobs[map.map?.Idmap ?? 0][(mobData.posX - map.offsetX, mobData.posY - map.offsetY)].Add(mobData);
+                    }
                 }
             }
         }
@@ -380,15 +385,15 @@ public class WebSocketServerManager
             try
             {
                 var accountData = CacheManager.Instance.GetAccountData(RaceManager.Instance.GetIDAccount(client));
-                var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
+                var map = CacheManager.Instance.GetMap(accountData?.playerData?.idMap ?? 0);
 
                 lock (MapController.mapPlayers)
                 {
-                    for (int y = 0; y < map.height; y++)
+                    for (int y = 0; y < map?.height; y++)
                     {
-                        for (int x = 0; x < map.width; x++)
+                        for (int x = 0; x < map?.width; x++)
                         {
-                            if (MapController.mapPlayers[map.map.Idmap].TryGetValue((x, y), out var playersInCell))
+                            if (MapController.mapPlayers[map?.map?.Idmap ?? 0].TryGetValue((x, y), out var playersInCell))
                             {
                                 playersInCell.Remove(client);
                             }
@@ -451,7 +456,7 @@ public class WebSocketServerManager
     {
         while (!shutdownCts.IsCancellationRequested)
         {
-            string input = Console.ReadLine();
+            string input = Console.ReadLine() ?? string.Empty;
 
             if (input == null)
                 continue;
@@ -459,7 +464,7 @@ public class WebSocketServerManager
             if (input == "q")
             {
                 Console.WriteLine("Do you want to quit? (y/n): ");
-                string confirm = Console.ReadLine();
+                string confirm = Console.ReadLine() ?? string.Empty;
 
                 if (confirm == null)
                     continue;

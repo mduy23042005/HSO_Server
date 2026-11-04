@@ -10,7 +10,13 @@ public class EquipmentController
 
         try
         {
-            var equipmentData = CacheManager.Instance.GetAccountData(idAccount).equipments;
+            var equipmentData = CacheManager.Instance.GetAccountData(idAccount)?.equipments;
+
+            if (equipmentData == null) 
+            {
+                Console.WriteLine($"[Server] ReadCacheEquipment: Equipment data not found for idAccount: {idAccount}");
+                return;
+            }
 
             EquipmentResultPacket equipmentResult = new EquipmentResultPacket
             {
@@ -36,9 +42,9 @@ public class EquipmentController
             {
                 writer.WriteInt(item.id);
                 writer.WriteInt(item.idItem0_1);
-                writer.WriteString(item.nameItem0_1);
+                writer.WriteString(item.nameItem0_1 ?? string.Empty);
                 writer.WriteInt(item.category);
-                writer.WriteString(item.slotName);
+                writer.WriteString(item.slotName ?? string.Empty);
             }
 
             await RaceManager.Instance.SendPacketToClient(client, writer.ToArray());

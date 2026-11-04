@@ -33,7 +33,10 @@ public class MobManager
 
                     foreach (var mob in mobs)
                     {
-                        if (CacheManager.Instance.GetMob(mob.id).hp > 0)
+                        if (mob == null || mob.mob == null || mob.mobsAI == null)
+                            continue;
+
+                        if (CacheManager.Instance.GetMob(mob.id)?.hp > 0 || mob.isRespawning)
                         {
                             mob.mobsAI.Attack(deltaTime, map, mob.id, mob.damage);
                             mob.mobsAI.Move(deltaTime, map, mob.id);
@@ -50,7 +53,7 @@ public class MobManager
                                 _ = Task.Run(async () =>
                                 {
                                     await Task.Delay(5000);
-
+                                                
                                     mob.hp = mob.mob.Hp ?? 0;
                                     mob.mobsAI.Respawn();
                                     mob.isRespawning = false;
@@ -96,11 +99,11 @@ public class MobManager
                         continue;
 
                     var accountData = CacheManager.Instance.GetAccountData(idAccount);
-                    if (accountData == null || accountData.playerTransformData == null || accountData.playerData == null)
+                    if (accountData == null || accountData.playerTransformData == null || accountData.playerTransformData.positionData == null || accountData.playerData == null)
                         continue;
 
                     var map = CacheManager.Instance.GetMap(accountData.playerData.idMap);
-                    if (map == null || map.mobsData == null)
+                    if (map == null || map.map == null || map.mobsData == null)
                         continue;
 
                     Vector2 playerPosition = new Vector2((int)MathF.Round(accountData.playerTransformData.positionData.x - 0.5f - map.offsetX), (int)MathF.Round(accountData.playerTransformData.positionData.y - 0.5f - map.offsetY));
@@ -142,7 +145,10 @@ public class MobManager
 
                     foreach (var mob in mobsInViewArea)
                     {
-                        var currentHPMob = CacheManager.Instance.GetMob(mob.id).hp;
+                        if (mob == null || mob.mob == null || mob.mobsAI == null)
+                            continue;
+
+                        var currentHPMob = CacheManager.Instance.GetMob(mob.id)?.hp ?? 0;
                         var currentTile = mapController.GetTileType(map, mob.mobsAI.GetCurrentPosition().X - map.offsetX, mob.mobsAI.GetCurrentPosition().Y - map.offsetY);
 
                         writer.WriteInt(mob.id);

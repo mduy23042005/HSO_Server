@@ -7,7 +7,12 @@ public class ReadAttributesController
     {
         try
         {
-            var equipmentData = CacheManager.Instance.GetAccountData(idAccount).equipments.Find(x => x.id == id);
+            var equipmentData = CacheManager.Instance.GetAccountData(idAccount)?.equipments?.Find(x => x.id == id);
+            if (equipmentData == null || equipmentData.item0_Attributes == null || equipmentData.nameAttributes == null)
+            {
+                Console.WriteLine($"[Server] ReadAttributesEquipment: Equipment data not found for idAccount: {idAccount}, id: {id}");
+                return;
+            }
 
             ReadAttributesEquipmentResultPacket equipmentAttributesResult = new ReadAttributesEquipmentResultPacket
             {
@@ -28,9 +33,9 @@ public class ReadAttributesController
             writer.WriteInt((int)equipmentAttributesResult.cmd);
             writer.WriteInt(equipmentAttributesResult.attributesData.id);
             writer.WriteInt(equipmentAttributesResult.attributesData.idItem0_1);
-            writer.WriteString(equipmentAttributesResult.attributesData.nameItem0_1);
+            writer.WriteString(equipmentAttributesResult.attributesData.nameItem0_1 ?? string.Empty);
             writer.WriteInt(equipmentAttributesResult.attributesData.category);
-            writer.WriteString(equipmentAttributesResult.attributesData.slotName);
+            writer.WriteString(equipmentAttributesResult.attributesData.slotName ?? string.Empty);
             writer.WriteListCount(equipmentAttributesResult.attributesData.item0_Attributes.Count);
             for (int i = 0; i < equipmentAttributesResult.attributesData.item0_Attributes.Count; i++)
             {
@@ -39,7 +44,7 @@ public class ReadAttributesController
                 writer.WriteInt(equipmentAttributesResult.attributesData.item0_Attributes[i].Idattribute);
                 writer.WriteInt(equipmentAttributesResult.attributesData.item0_Attributes[i].Value);
                 writer.WriteInt(equipmentAttributesResult.attributesData.item0_Attributes[i].Category);
-                writer.WriteString(equipmentAttributesResult.attributesData.nameAttributes[i].NameAttribute);
+                writer.WriteString(equipmentAttributesResult.attributesData.nameAttributes[i].NameAttribute ?? string.Empty);
             }
 
             await RaceManager.Instance.SendPacketToClient(client, writer.ToArray());
@@ -55,7 +60,12 @@ public class ReadAttributesController
     {
         try
         {
-            var inventoryItem0Data = CacheManager.Instance.GetAccountData(idAccount).inventoryItem0s.Find(x => x.id == id);
+            var inventoryItem0Data = CacheManager.Instance.GetAccountData(idAccount)?.inventoryItem0s?.Find(x => x.id == id);
+            if (inventoryItem0Data == null || inventoryItem0Data.item0_Attributes == null || inventoryItem0Data.nameAttributes == null)
+            {
+                Console.WriteLine($"[Server] ReadAttributesInventory: Inventory data not found for idAccount: {idAccount}, id: {id}");
+                return;
+            }
 
             ReadAttributesInventoryResultPacket inventoryItem0AttributesResult = new ReadAttributesInventoryResultPacket();
 
@@ -84,8 +94,8 @@ public class ReadAttributesController
             writer.WriteInt((int)inventoryItem0AttributesResult.cmd);
             writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.id);
             writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.idItem0);
-            writer.WriteString(inventoryItem0AttributesResult.attributesItem0Data.nameItem0);
-            writer.WriteString(inventoryItem0AttributesResult.attributesItem0Data.typeItem0);
+            writer.WriteString(inventoryItem0AttributesResult.attributesItem0Data.nameItem0 ?? string.Empty);
+            writer.WriteString(inventoryItem0AttributesResult.attributesItem0Data.typeItem0 ?? string.Empty);
             writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.category);
             writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.idSchool);
             writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.level);
@@ -97,7 +107,7 @@ public class ReadAttributesController
                 writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.item0_Attributes[i].Idattribute);
                 writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.item0_Attributes[i].Value);
                 writer.WriteInt(inventoryItem0AttributesResult.attributesItem0Data.item0_Attributes[i].Category);
-                writer.WriteString(inventoryItem0AttributesResult.attributesItem0Data.nameAttributes[i].NameAttribute);
+                writer.WriteString(inventoryItem0AttributesResult.attributesItem0Data.nameAttributes[i].NameAttribute ?? string.Empty);
             }
 
             await RaceManager.Instance.SendPacketToClient(client, writer.ToArray());
@@ -116,9 +126,16 @@ public class ReadAttributesController
         try
         {
             var accountData = CacheManager.Instance.GetAccountData(idAccount);
-            if (accountData == null) return;
+            if (accountData == null || accountData.playerData == null || accountData.inventoryItem0s == null || accountData.equipments == null)
+                return;
 
             var inventoryItem0Data = accountData.inventoryItem0s.Find(x => x.id == id);
+            if (inventoryItem0Data == null)
+            {
+                Console.WriteLine($"[Server] EquipItem0: Inventory item not found for idAccount: {idAccount}, id: {id}");
+                return;
+            }
+
             var equipmentData = accountData.equipments.Find(x => x.slotName == slotName);
 
             var tempEquipmentItem = new EquipmentData
@@ -136,11 +153,14 @@ public class ReadAttributesController
             equipmentData.item0_Attributes = inventoryItem0Data.item0_Attributes;
             equipmentData.nameAttributes = inventoryItem0Data.nameAttributes;
 
-            inventoryItem0Data.idItem0 = tempEquipmentItem.idItem0_1;
-            inventoryItem0Data.nameItem0 = tempEquipmentItem.nameItem0_1;
-            inventoryItem0Data.category = tempEquipmentItem.category;
-            inventoryItem0Data.item0_Attributes = tempEquipmentItem.item0_Attributes;
-            inventoryItem0Data.nameAttributes = tempEquipmentItem.nameAttributes;
+            if (tempEquipmentItem != null)
+            {
+                inventoryItem0Data.idItem0 = tempEquipmentItem.idItem0_1;
+                inventoryItem0Data.nameItem0 = tempEquipmentItem.nameItem0_1;
+                inventoryItem0Data.category = tempEquipmentItem.category;
+                inventoryItem0Data.item0_Attributes = tempEquipmentItem.item0_Attributes;
+                inventoryItem0Data.nameAttributes = tempEquipmentItem.nameAttributes;
+            }
 
             accountData.playerData.weapon = accountData.equipments[0].idItem0_1;
             accountData.playerData.helmet = accountData.equipments[1].idItem0_1;

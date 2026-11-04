@@ -2,7 +2,7 @@
 
 public class NPCData
 {
-    public Npc npc;
+    public Npc? npc;
     public int posX;
     public int posY;
 }
@@ -10,31 +10,31 @@ public class NPCData
 //Trang bị riêng từng school
 public class Item0Data
 {
-    public Item0 item0;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
+    public Item0? item0;
+    public List<Item0Attribute>? item0_Attributes;
+    public List<HSO_Server.Models.Attribute>? nameAttributes;
 }
 //Trang bị chung
 public class Item1Data
 {
-    public Item1 item1;
-    public List<Item1Attribute> item1_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
+    public Item1? item1;
+    public List<Item1Attribute>? item1_Attributes;
+    public List<HSO_Server.Models.Attribute>? nameAttributes;
 }
 //Vật phẩm nhiệm vụ
 public class Item2Data
 {
-    public Item2 item2;
+    public Item2? item2;
 }
 //Vật phẩm tiêu hao
 public class Item3Data
 {
-    public Item3 item3;
+    public Item3? item3;
 }
 //Vật phẩm cường hóa
 public class Item4Data
 {
-    public Item4 item4;
+    public Item4? item4;
 }
 
 //Tài nguyên của player
@@ -42,39 +42,39 @@ public class EquipmentData
 {
     public int id;
     public int idItem0_1;
-    public string nameItem0_1;
+    public string? nameItem0_1;
     public int category;
-    public string slotName;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
+    public string? slotName;
+    public List<Item0Attribute>? item0_Attributes;
+    public List<HSO_Server.Models.Attribute>? nameAttributes;
 }
 public class InventoryItem0Data
 {
     public int id;
     public int idItem0;
-    public string nameItem0;
-    public string typeItem0;
+    public string? nameItem0;
+    public string? typeItem0;
     public int category;
     public int idSchool;
     public int level;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
+    public List<Item0Attribute>? item0_Attributes;
+    public List<HSO_Server.Models.Attribute>? nameAttributes;
 }
 public class InventoryItem1Data
 {
     public int id;
     public int idItem1;
-    public string nameItem1;
-    public string typeItem1;
+    public string? nameItem1;
+    public string? typeItem1;
     public int level;
-    public List<Item1Attribute> item1_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
+    public List<Item1Attribute>? item1_Attributes;
+    public List<HSO_Server.Models.Attribute>? nameAttributes;
 }
 public class InventoryItem2Data
 {
     public int id;
     public int idItem2;
-    public string nameItem2;
+    public string? nameItem2;
     public int level;
     public int quality;
 }
@@ -82,39 +82,39 @@ public class InventoryItem3Data
 {
     public int id;
     public int idItem3;
-    public string nameItem3;
+    public string? nameItem3;
     public int level;
-    public string details;
+    public string? details;
     public int quality;
 }
 public class InventoryItem4Data
 {
     public int id;
     public int idItem4;
-    public string nameItem4;
+    public string? nameItem4;
     public int level;
-    public string details;
+    public string? details;
     public int quality;
 }
 public class ChestData
 {
-    public List<ChestItemX> chestItems;
+    public List<ChestItemX>? chestItems;
 }
 
 public class AccountData
 {
-    public Account account;
-    public List<EquipmentData> equipments;
-    public List<InventoryItem0Data> inventoryItem0s;
-    public List<InventoryItem1Data> inventoryItem1s;
-    public List<InventoryItem2Data> inventoryItem2s;
-    public List<InventoryItem3Data> inventoryItem3s;
-    public List<InventoryItem4Data> inventoryItem4s;
-    public Chest chest;
+    public Account? account;
+    public List<EquipmentData>? equipments;
+    public List<InventoryItem0Data>? inventoryItem0s;
+    public List<InventoryItem1Data>? inventoryItem1s;
+    public List<InventoryItem2Data>? inventoryItem2s;
+    public List<InventoryItem3Data>? inventoryItem3s;
+    public List<InventoryItem4Data>? inventoryItem4s;
+    public Chest? chest;
 
-    public PlayerData playerData;
-    public PlayerStateData playerStateData;
-    public PlayerTransformData playerTransformData;
+    public PlayerData? playerData;
+    public PlayerStateData? playerStateData;
+    public PlayerTransformData? playerTransformData;
 }
 
 public class RegisterResultPacket
@@ -138,7 +138,7 @@ public class MoveArea
 }
 public class MobData
 {
-    public Mob mob;
+    public Mob? mob;
     public int id;
     public int hp;
     public int damage;
@@ -146,7 +146,7 @@ public class MobData
     public int posY;
     public bool isRespawning;
 
-    public MobController mobsAI;
+    public MobController? mobsAI;
 }
 
 public enum State
@@ -241,27 +241,27 @@ public class PartBodyData
 {
     public Category category;
     public Label label;
-    public PositionData positionData;
-    public RotationData rotationData;
-    public ScaleData scaleData;
-    public ColorData colorData;
+    public PositionData? positionData;
+    public RotationData? rotationData;
+    public ScaleData? scaleData;
+    public ColorData? colorData;
 }
 public class PlayerStateData
 {
     public State stateData;
     public Direction directionData;
-    public List<PartBodyData> partBodyTransforms;
+    public List<PartBodyData>? partBodyTransforms;
 }
 public class PlayerTransformData
 {
-    public PositionData positionData;
-    public ScaleData scaleData;
+    public PositionData? positionData;
+    public ScaleData? scaleData;
 }
 public class PlayerData
 {
     public int idMap;
     public int idAccount;
-    public string nameChar;
+    public string? nameChar;
     public int level;
     public int idSchool;
     public int hair;
@@ -291,17 +291,17 @@ public class PlayerData
 public class EquipmentResultPacket
 {
     public EnumCmdCode cmd;
-    public List<EquipmentData> equipmentData;
+    public List<EquipmentData>? equipmentData;
 }
 
 public class InventoryResultPacket
 {
     public EnumCmdCode cmd;
-    public List<InventoryItem0Data> inventoryItem0Data;
-    public List<InventoryItem1Data> inventoryItem1Data;
-    public List<InventoryItem2Data> inventoryItem2Data;
-    public List<InventoryItem3Data> inventoryItem3Data;
-    public List<InventoryItem4Data> inventoryItem4Data;
+    public List<InventoryItem0Data>? inventoryItem0Data;
+    public List<InventoryItem1Data>? inventoryItem1Data;
+    public List<InventoryItem2Data>? inventoryItem2Data;
+    public List<InventoryItem3Data>? inventoryItem3Data;
+    public List<InventoryItem4Data>? inventoryItem4Data;
 }
 
 //class trả dữ liệu về client
@@ -311,14 +311,14 @@ public class LogInResultPacket
     public bool success;
     public int idAccount;
     public int idSchool;
-    public string nameChar;
+    public string? nameChar;
     public int hair;
     public int level;
     public int maxHP;
     public int maxMP;
     public int hp;
     public int mp;
-    public string message;
+    public string? message;
 }
 
 public class DroppedItem0Data
@@ -327,13 +327,13 @@ public class DroppedItem0Data
     public float posX;
     public float posY;
     public int idItem0;
-    public string nameItem0;
-    public string typeItem0;
+    public string? nameItem0;
+    public string? typeItem0;
     public int category;
     public int idSchool;
     public int level;
-    public List<Item0Attribute> item0_Attributes;
-    public List<HSO_Server.Models.Attribute> nameAttributes;
+    public List<Item0Attribute>? item0_Attributes;
+    public List<HSO_Server.Models.Attribute>? nameAttributes;
 }
 
 public enum TileType
@@ -347,9 +347,9 @@ public enum TileType
 }
 public class MapData
 {
-    public Map map;
-    public List<MobData> mobsData;
-    public List<NPCData> npcsData;
+    public Map? map;
+    public List<MobData>? mobsData;
+    public List<NPCData>? npcsData;
 
     public int width;
     public int height;
@@ -357,21 +357,21 @@ public class MapData
     public int offsetX;
     public int offsetY;
 
-    public byte[,] tiles;
+    public byte[,]? tiles;
 }
 
 public class ReadAttributesEquipmentResultPacket
 {
     public EnumCmdCode cmd;
-    public EquipmentData attributesData;
+    public EquipmentData? attributesData;
 }
 
 public class ReadAttributesInventoryResultPacket
 {
     public EnumCmdCode cmd;
-    public InventoryItem0Data attributesItem0Data;
-    public InventoryItem1Data attributesItem1Data;
-    public InventoryItem2Data attributesItem2Data;
-    public InventoryItem3Data attributesItem3Data;
-    public InventoryItem4Data attributesItem4Data;
+    public InventoryItem0Data? attributesItem0Data;
+    public InventoryItem1Data? attributesItem1Data;
+    public InventoryItem2Data? attributesItem2Data;
+    public InventoryItem3Data? attributesItem3Data;
+    public InventoryItem4Data? attributesItem4Data;
 }

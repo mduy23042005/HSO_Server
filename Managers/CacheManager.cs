@@ -6,44 +6,45 @@ public class CacheManager
     private static readonly Lazy<CacheManager> lazyInstance = new Lazy<CacheManager>(() => new CacheManager());
     public static CacheManager Instance => lazyInstance.Value;
 
-    private Dictionary<int, MapData> maps;
-    private Dictionary<string, int> clientMaps;
-    private Dictionary<int, MobData> mobs;
-    private Dictionary<int, NPCData> npcs;
+    private readonly Dictionary<int, MapData> maps = new Dictionary<int, MapData>();
+    private readonly Dictionary<string, int> clientMaps = new Dictionary<string, int>();
+    private readonly Dictionary<int, MobData> mobs = new Dictionary<int, MobData>();
+    private readonly Dictionary<int, NPCData> npcs = new Dictionary<int, NPCData>();
 
-    private Dictionary<int, Item0Data> item0s;
-    private Dictionary<int, Item1Data> item1s;
-    private Dictionary<int, Item2Data> item2s;
-    private Dictionary<int, Item3Data> item3s;
-    private Dictionary<int, Item4Data> item4s;
+    private readonly Dictionary<int, Item0Data> item0s = new Dictionary<int, Item0Data>();
+    private readonly Dictionary<int, Item1Data> item1s = new Dictionary<int, Item1Data>();
+    private readonly Dictionary<int, Item2Data> item2s = new Dictionary<int, Item2Data>();
+    private readonly Dictionary<int, Item3Data> item3s = new Dictionary<int, Item3Data>();
+    private readonly Dictionary<int, Item4Data> item4s = new Dictionary<int, Item4Data>();
 
-    private Dictionary<int, AccountData> accounts;
+    private readonly Dictionary<int, AccountData> accounts = new Dictionary<int, AccountData>();
 
-    private Dictionary<int, int[]> droppedItem0sMob = new Dictionary<int, int[]>();
-    private Dictionary<int, int[]> droppedItem0sBoss = new Dictionary<int, int[]>();
+    private readonly Dictionary<int, int[]> droppedItem0sMob = new Dictionary<int, int[]>();
+    private readonly Dictionary<int, int[]> droppedItem0sBoss = new Dictionary<int, int[]>();
 
     public void InitCache()
     {
-        maps = new Dictionary<int, MapData>();
-        clientMaps = new Dictionary<string, int>();
-        mobs = new Dictionary<int, MobData>();
-        npcs = new Dictionary<int, NPCData>();
-
-        item0s = new Dictionary<int, Item0Data>();
-        item1s = new Dictionary<int, Item1Data>();
-        item2s = new Dictionary<int, Item2Data>();
-        item3s = new Dictionary<int, Item3Data>();
-        item4s = new Dictionary<int, Item4Data>();
-
-        accounts = new Dictionary<int, AccountData>();
+        maps.Clear();
+        clientMaps.Clear();
+        mobs.Clear();
+        npcs.Clear();
+        item0s.Clear();
+        item1s.Clear();
+        item2s.Clear();
+        item3s.Clear();
+        item4s.Clear();
+        accounts.Clear();
+        droppedItem0sMob.Clear();
+        droppedItem0sBoss.Clear();
     }
 
     //Map
     public void AddMap(MapData data)
     {
-        maps[data.map.Idmap] = data;
+        if (data.map != null)
+            maps[data.map.Idmap] = data;
     }
-    public MapData GetMap(int mapId)
+    public MapData? GetMap(int mapId)
     {
         maps.TryGetValue(mapId, out var data);
         return data;
@@ -64,7 +65,8 @@ public class CacheManager
     }
     public void AddClientMap(MapData data)
     {
-        clientMaps[data.map.NameMap] = data.map.Idmap;
+        if (data.map != null)
+            clientMaps[data.map.NameMap] = data.map.Idmap;
     }
     public int GetClientMapID(string nameMap)
     {
@@ -77,7 +79,7 @@ public class CacheManager
     {
         mobs[data.id] = data;
     }
-    public MobData GetMob(int mobId)
+    public MobData? GetMob(int mobId)
     {
         mobs.TryGetValue(mobId, out var data);
         return data;
@@ -86,7 +88,7 @@ public class CacheManager
     {
         return mobs.Count;
     }
-    public Dictionary<int, MobData> GetAllMobs()
+    public Dictionary<int, MobData>? GetAllMobs()
     {
         return mobs;
     }
@@ -94,9 +96,10 @@ public class CacheManager
     //NPC
     public void AddNPC(NPCData data)
     {
-        npcs[data.npc.Idnpc] = data;
+        if (data.npc != null)
+            npcs[data.npc.Idnpc] = data;
     }
-    public NPCData GetNPC(int npcId)
+    public NPCData? GetNPC(int npcId)
     {
         npcs.TryGetValue(npcId, out var data);
         return data;
@@ -111,7 +114,7 @@ public class CacheManager
     {
         droppedItem0sMob[mobId] = item0Ids;
     }
-    public int[] GetDroppedItem0sMob(int mobId)
+    public int[]? GetDroppedItem0sMob(int mobId)
     {
         droppedItem0sMob.TryGetValue(mobId, out var item0Ids);
         return item0Ids;
@@ -126,7 +129,7 @@ public class CacheManager
     {
         droppedItem0sBoss[bossId] = item0Ids;
     }
-    public int[] GetDroppedItem0sBoss(int bossId)
+    public int[]? GetDroppedItem0sBoss(int bossId)
     {
         droppedItem0sBoss.TryGetValue(bossId, out var item0Ids);
         return item0Ids;
@@ -139,9 +142,10 @@ public class CacheManager
     //Item0
     public void AddItem0(Item0Data data)
     {
-        item0s[data.item0.Iditem0] = data;
+        if (data.item0 != null)
+            item0s[data.item0.Iditem0] = data;
     }
-    public Item0Data GetItem0(int id)
+    public Item0Data? GetItem0(int id)
     {
         item0s.TryGetValue(id, out var data);
         return data;
@@ -154,9 +158,10 @@ public class CacheManager
     //Item1
     public void AddItem1(Item1Data data)
     {
-        item1s[data.item1.Iditem1] = data;
+        if (data.item1 != null)
+            item1s[data.item1.Iditem1] = data;
     }
-    public Item1Data GetItem1(int id)
+    public Item1Data? GetItem1(int id)
     {
         item1s.TryGetValue(id, out var data);
         return data;
@@ -169,9 +174,10 @@ public class CacheManager
     //Item2
     public void AddItem2(Item2Data data)
     {
-        item2s[data.item2.Iditem2] = data;
+        if (data.item2 != null)
+            item2s[data.item2.Iditem2] = data;
     }
-    public Item2Data GetItem2(int id)
+    public Item2Data? GetItem2(int id)
     {
         item2s.TryGetValue(id, out var data);
         return data;
@@ -184,9 +190,10 @@ public class CacheManager
     //Item3
     public void AddItem3(Item3Data data)
     {
-        item3s[data.item3.Iditem3] = data;
+        if (data.item3 != null)
+            item3s[data.item3.Iditem3] = data;
     }
-    public Item3Data GetItem3(int id)
+    public Item3Data? GetItem3(int id)
     {
         item3s.TryGetValue(id, out var data);
         return data;
@@ -199,9 +206,10 @@ public class CacheManager
     //Item4
     public void AddItem4(Item4Data data)
     {
-        item4s[data.item4.Iditem4] = data;
+        if (data.item4 != null)
+            item4s[data.item4.Iditem4] = data;
     }
-    public Item4Data GetItem4(int id)
+    public Item4Data? GetItem4(int id)
     {
         item4s.TryGetValue(id, out var data);
         return data;
@@ -214,14 +222,15 @@ public class CacheManager
     //Account
     public void AddAccountData(AccountData data)
     {
-        accounts[data.account.Idaccount] = data;
+        if (data.account != null)
+            accounts[data.account.Idaccount] = data;
     }
-    public AccountData GetAccountData(int accountId)
+    public AccountData? GetAccountData(int accountId)
     {
         accounts.TryGetValue(accountId, out var data);
         return data;
     }
-    public Dictionary<int, AccountData> GetAllAccountData()
+    public Dictionary<int, AccountData>? GetAllAccountData()
     {
         return accounts;
     }
