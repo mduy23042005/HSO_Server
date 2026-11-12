@@ -40,4 +40,10 @@
     dropItem2s = 0x0512,
     dropItem3s = 0x0513,
     dropItem4s = 0x0514,
+
+    pickupItem0 = 0x0600,
+    pickupItem1 = 0x0601,
+    pickupItem2 = 0x0602,
+    pickupItem3 = 0x0603,
+    pickupItem4 = 0x0604,
 }

@@ -1,6 +1,6 @@
 ﻿public class PlayerController
 {
-    int idAccount;
+    private int idAccount;
     private MapController mapController = new MapController();
     private int maxHP;
     private int maxMP;

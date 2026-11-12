@@ -78,7 +78,7 @@ public class WebSocketServerManager
 
             time = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTimeZone);
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initializing Dropped Items...");
-            DroppedItemManager.Instance.InitDroppedItem0s();
+            ItemManager.Instance.InitDroppedItem0s();
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized Dropped Items successfully! [{CacheManager.Instance.GetCountDroppedItem0sMob()}]");
 
             _ = Task.Run(() => MobManager.Instance.UpdateMobsLoop(shutdownCts));
@@ -87,7 +87,7 @@ public class WebSocketServerManager
             _ = Task.Run(() => MobManager.Instance.SyncMobsLoop(shutdownCts));
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncMobs loop successfully!");
 
-            _ = Task.Run(() => DroppedItemManager.Instance.SyncDroppedItemsLoop(shutdownCts));
+            _ = Task.Run(() => ItemManager.Instance.SyncDroppedItemsLoop(shutdownCts));
             Console.WriteLine($"[Server] {time.ToString("hh:mm:ss tt")} Initialized SyncDroppedItems loop successfully!");
 
             _ = Task.Run(() => PlayerManager.Instance.SyncOtherPlayersLoop(shutdownCts));
@@ -577,8 +577,18 @@ public class WebSocketServerManager
                     int idDropItem0 = reader.ReadInt();
                     int idItem0DropItem0 = reader.ReadInt();
 
-                    var dropItem0Controller = new DroppedItemManager();
-                    await dropItem0Controller.DropItem0(client, idAccountDropItem0, idDropItem0, idItem0DropItem0);
+                    var dropItem0Controller = new ItemManager();
+                    await dropItem0Controller.DropItem0Player(client, idAccountDropItem0, idDropItem0, idItem0DropItem0);
+                    break;
+
+                case EnumCmdCode.pickupItem0:
+                    int idAccountPickUpItem0 = reader.ReadInt();
+                    int idPickUpItem0 = reader.ReadInt();
+                    float itemPosXPickUpItem0 = reader.ReadFloat();
+                    float itemPosYPickUpItem0 = reader.ReadFloat();
+
+                    var pickItem0Controller = new ItemManager();
+                    await pickItem0Controller.PickItem0Player(client, idAccountPickUpItem0, idPickUpItem0, itemPosXPickUpItem0, itemPosYPickUpItem0);
                     break;
 
                 case EnumCmdCode.playerAttackMob:

@@ -375,3 +375,16 @@ public class ReadAttributesInventoryResultPacket
     public InventoryItem3Data? attributesItem3Data;
     public InventoryItem4Data? attributesItem4Data;
 }
+
+public class DroppedItem0Request
+{
+    public int id;
+    public int idAccount;
+    public int idItem0;
+    public int category;
+}
+
+public class PickupResult
+{
+    public int id;
+}

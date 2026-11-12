@@ -1,10 +1,12 @@
-﻿using System.Diagnostics;
+﻿using HSO_Server.Models;
+using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Numerics;
 
-public class DroppedItemManager
+public class ItemManager
 {
-    private static readonly Lazy<DroppedItemManager> lazyInstance = new Lazy<DroppedItemManager>(() => new DroppedItemManager());
-    public static DroppedItemManager Instance => lazyInstance.Value;
+    private static readonly Lazy<ItemManager> lazyInstance = new Lazy<ItemManager>(() => new ItemManager());
+    public static ItemManager Instance => lazyInstance.Value;
 
     private Dictionary<ClientConnection, List<DroppedItem0Data>> droppedItem0sInViewAreaSnapshot = new Dictionary<ClientConnection, List<DroppedItem0Data>>();
     private int nextDroppedItemId;
@@ -60,9 +62,10 @@ public class DroppedItemManager
         DroppedItem0Data droppedItem0 = new DroppedItem0Data
         {
             id = GetNextDroppedItemId(),
-            idItem0 = selectedIDItem0,
+            // thêm posX và posY để lưu tọa độ để truy vấn trực tiếp không cần phải tính lại từ map
             posX = posX,
             posY = posY,
+            idItem0 = selectedIDItem0,
             nameItem0 = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0?.NameItem0,
             typeItem0 = CacheManager.Instance.GetItem0(selectedIDItem0)?.item0?.TypeItem0 ?? "",
             category = 1, // các item0 vừa khởi tạo giả sử thuộc hạng 1
@@ -88,33 +91,32 @@ public class DroppedItemManager
             if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
             {
                 droppedItem0sInCell.Add(droppedItem0);
-                Console.WriteLine($"Dropped item {droppedItem0.id} | typeItem0 {droppedItem0.typeItem0} | idSchool {droppedItem0.idSchool} | level {droppedItem0.level}");
             }
         }
     }
 
-    public async Task DropItem0(ClientConnection client, int idAccount, int idSlot, int selectedIDItem0)
+    public async Task DropItem0Player(ClientConnection client, int idAccount, int idSlot, int selectedIDItem0)
     {
         var accountData = CacheManager.Instance.GetAccountData(idAccount);
 
         if (accountData == null)
         {
-            Console.WriteLine($"[Server] DropItem0: Account data not found for idAccount: {idAccount}");
+            Console.WriteLine($"[Server] DropItem0Player: Account data not found for idAccount: {idAccount}");
             return;
         }
         if (accountData.playerData == null)
         {
-            Console.WriteLine($"[Server] DropItem0: Player data not found for idAccount: {idAccount}");
+            Console.WriteLine($"[Server] DropItem0Player: Player data not found for idAccount: {idAccount}");
             return;
         }
         if (accountData.playerTransformData == null)
         {
-            Console.WriteLine($"[Server] DropItem0: Player transform data not found for idAccount: {idAccount}");
+            Console.WriteLine($"[Server] DropItem0Player: Player transform data not found for idAccount: {idAccount}");
             return;
         }
         if (accountData.playerTransformData.positionData == null)
         {
-            Console.WriteLine($"[Server] DropItem0: Player position data not found for idAccount: {idAccount}");
+            Console.WriteLine($"[Server] DropItem0Player: Player position data not found for idAccount: {idAccount}");
             return;
         }
 
@@ -125,7 +127,7 @@ public class DroppedItemManager
 
         if (map == null)
         {
-            Console.WriteLine($"[Server] DropItem0: Map data not found for idAccount: {idAccount}");
+            Console.WriteLine($"[Server] DropItem0Player: Map data not found for idAccount: {idAccount}");
             return;
         }
 
@@ -135,7 +137,7 @@ public class DroppedItemManager
 
         if (accountData.inventoryItem0s == null || idSlot < 0 || idSlot >= accountData.inventoryItem0s.Count)
         {
-            Console.WriteLine($"[Server] DropItem0: Inventory item not found for idAccount: {idAccount}, idSlot: {idSlot}");
+            Console.WriteLine($"[Server] DropItem0Player: Inventory item not found for idAccount: {idAccount}, idSlot: {idSlot}");
             return;
         }
 
@@ -153,6 +155,14 @@ public class DroppedItemManager
             level = accountData.inventoryItem0s[idSlot].level,
             item0_Attributes = accountData.inventoryItem0s[idSlot].item0_Attributes,
             nameAttributes = accountData.inventoryItem0s[idSlot].nameAttributes,
+        };
+
+        DroppedItem0Request saveData = new DroppedItem0Request
+        {
+            id = accountData.inventoryItem0s[idSlot].id,
+            idAccount = idAccount,
+            idItem0 = accountData.inventoryItem0s[idSlot].idItem0,
+            category = droppedItem0.category,
         };
 
         accountData.inventoryItem0s.RemoveAt(idSlot);
@@ -174,10 +184,108 @@ public class DroppedItemManager
 
             if (MapController.mapDroppedItem0s.TryGetValue(map.map.Idmap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
             {
-                Console.WriteLine($"Save id: {droppedItem0.id}");
                 droppedItem0sInCell.Add(droppedItem0);
             }
         }
+
+        string json = JsonConvert.SerializeObject(saveData);
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        await WebAPIManager.Instance.GetHttpClient().PostAsync($"{WebAPIManager.Instance.GetApiUrl()}/api/account/dropItem0", content);
+    }
+
+    public async Task PickItem0Player(ClientConnection client, int idAccount, int id, float itemPosX, float itemPosY)
+    {
+        var accountData = CacheManager.Instance.GetAccountData(idAccount);
+
+        if (accountData == null || accountData.playerData == null || accountData.playerTransformData == null || accountData.playerTransformData.positionData == null || accountData.inventoryItem0s == null)
+            return;
+
+        int idMap = accountData.playerData.idMap;
+        var map = CacheManager.Instance.GetMap(idMap);
+
+        if (map == null)
+        {
+            Console.WriteLine($"[Server] PickItem0Player: Map data not found for idAccount: {idAccount}");
+            return;
+        }
+
+        int x = (int)MathF.Round(itemPosX - 0.5f - map.offsetX);
+        int y = (int)MathF.Round(itemPosY - 0.5f - map.offsetY);
+
+        // Khai báo ngoài lock để dùng được ở phía dưới
+        DroppedItem0Data? pickedItem = null;
+
+        // Tìm và gỡ item trong cùng một lock: chỉ một người nhặt được
+        lock (MapController.mapDroppedItem0s)
+        {
+            if (MapController.mapDroppedItem0s.TryGetValue(idMap, out var mapCells) && mapCells.TryGetValue((x, y), out var droppedItem0sInCell))
+            {
+                pickedItem = droppedItem0sInCell.FirstOrDefault(item => item.id == id);
+
+                if (pickedItem != null)
+                    droppedItem0sInCell.Remove(pickedItem);
+            }
+        }
+
+        if (pickedItem == null)
+            return;
+
+        // Lưu DB trước để lấy id thật
+        var saveData = new DroppedItem0Request
+        {
+            idAccount = idAccount,
+            idItem0 = pickedItem.idItem0,
+            category = pickedItem.category,
+        };
+
+        string json = JsonConvert.SerializeObject(saveData);
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        int newId = 0;
+        try
+        {
+            var response = await WebAPIManager.Instance.GetHttpClient().PostAsync($"{WebAPIManager.Instance.GetApiUrl()}/api/account/pickupItem0", content);
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception("API trả về " + response.StatusCode);
+
+            var result = JsonConvert.DeserializeObject<PickupResult>(await response.Content.ReadAsStringAsync());
+            newId = result?.id ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[Server] PickItem0Player API error: " + ex.Message);
+
+            // Trả item lại map để không bị mất
+            lock (MapController.mapDroppedItem0s)
+            {
+                if (MapController.mapDroppedItem0s.TryGetValue(idMap, out var cells) &&
+                    cells.TryGetValue((x, y), out var list))
+                {
+                    list.Add(pickedItem);
+                }
+            }
+            return;
+        }
+
+        lock (accountData.inventoryItem0s)
+        {
+            accountData.inventoryItem0s.Add(new InventoryItem0Data
+            {
+                id = newId, // id thật từ DB, để lần drop sau còn xóa được
+                idItem0 = pickedItem.idItem0,
+                nameItem0 = pickedItem.nameItem0,
+                typeItem0 = pickedItem.typeItem0,
+                category = pickedItem.category,
+                idSchool = pickedItem.idSchool,
+                level = pickedItem.level,
+                item0_Attributes = pickedItem.item0_Attributes,
+                nameAttributes = pickedItem.nameAttributes,
+            });
+        }
+
+        InventoryController inventoryController = new InventoryController();
+        await inventoryController.ReadCacheInventory(client);
     }
 
     public async Task SyncDroppedItemsLoop(CancellationTokenSource shutdownCts)

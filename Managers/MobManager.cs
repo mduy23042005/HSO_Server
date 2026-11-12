@@ -47,7 +47,7 @@ public class MobManager
                             {
                                 mob.isRespawning = true;
 
-                                DroppedItemManager.Instance.DropItem0Mob(mob.mob.Idmob, map, mob.mobsAI.GetCurrentPosition().X, mob.mobsAI.GetCurrentPosition().Y);
+                                ItemManager.Instance.DropItem0Mob(mob.mob.Idmob, map, mob.mobsAI.GetCurrentPosition().X, mob.mobsAI.GetCurrentPosition().Y);
                                 mob.mobsAI.Die();
         
                                 _ = Task.Run(async () =>
