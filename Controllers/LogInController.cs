@@ -32,8 +32,6 @@ public class LogInController
                     level = 0,
                     maxHP = 0,
                     maxMP = 0,
-                    hp = 0,
-                    mp = 0,
                     message = $"Tài khoản {acc.NameChar} đang online."
                 };
 
@@ -103,8 +101,6 @@ public class LogInController
                 level = 0,
                 maxHP = 0,
                 maxMP = 0,
-                hp = 0,
-                mp = 0,
                 message = "Username hoặc Password không đúng."
             };
         }

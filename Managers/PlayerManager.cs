@@ -128,7 +128,7 @@ public class PlayerManager
     }
     public async Task SyncOtherPlayersRealtimeLoop(CancellationTokenSource shutdownCts)
     {
-        const int targetTickRate = 30;
+        const int targetTickRate = 15;
         const int tickMS = 1000 / targetTickRate;
 
         var stopwatch = new Stopwatch();
